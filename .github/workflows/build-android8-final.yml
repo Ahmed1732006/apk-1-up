@@ -17,7 +17,7 @@ jobs:
       - name: Version
         run: |
           echo "ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER + 60))" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=1.4.8" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.4.9" >> "$GITHUB_ENV"
       - run: node scripts/prepare-android.mjs
       - run: node scripts/patch-pdf-canonical.mjs
       - run: node scripts/fix-pdf-web-syntax.mjs
@@ -86,7 +86,7 @@ jobs:
           APKS=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
           B=$("$AAPT" dump badging "$APK")
           printf '%s\n' "$B" | grep -F "name='com.inthevoid.platform'"
-          printf '%s\n' "$B" | grep -F "versionName='1.4.8'"
+          printf '%s\n' "$B" | grep -F "versionName='1.4.9'"
           "$APKS" verify --verbose --print-certs "$APK"
           mkdir -p /tmp/apkcheck
           unzip -q -o "$APK" 'classes*.dex' 'assets/public/app/index.html' -d /tmp/apkcheck
@@ -96,6 +96,8 @@ jobs:
           grep -Fq 'IN THE VOID' /tmp/apkcheck/assets/public/app/index.html
           grep -Fq 'SUPABASE_URL' /tmp/apkcheck/assets/public/app/index.html
           ! grep -Fq 'iv-native-pdf-runtime' /tmp/apkcheck/assets/public/app/index.html
+      - name: Prepare test-only PDF proxy after release APK is built
+        run: node scripts/add-pdf-smoke-proxy.mjs
       - name: Android 8 emulator smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
@@ -106,14 +108,16 @@ jobs:
           disable-animations: true
           script: |
             set -e
-            adb install -r android/app/build/outputs/apk/release/app-release.apk
+            (cd android && ./gradlew assembleDebug --no-daemon)
+            adb uninstall com.inthevoid.platform || true
+            adb install android/app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n com.inthevoid.platform/.MainActivity
             sleep 8
             adb shell dumpsys activity activities | grep -F 'com.inthevoid.platform/.MainActivity'
             python3 scripts/create-smoke-pdf.py /tmp/smoke.pdf
             adb push /tmp/smoke.pdf /data/local/tmp/smoke.pdf
             adb shell run-as com.inthevoid.platform cp /data/local/tmp/smoke.pdf files/smoke.pdf
-            adb shell run-as com.inthevoid.platform am start -n com.inthevoid.platform/.PdfViewerActivity --es pdf_path /data/data/com.inthevoid.platform/files/smoke.pdf --es pdf_name smoke-test.pdf
+            adb shell am start -n com.inthevoid.platform/.PdfSmokeProxyActivity
             sleep 5
             adb shell dumpsys activity activities | grep -F 'com.inthevoid.platform/.PdfViewerActivity'
             adb exec-out screencap -p > /tmp/pdf-viewer.png
