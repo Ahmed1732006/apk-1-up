@@ -124,8 +124,13 @@ jobs:
             exit 1
           fi
           echo 'PASS: one canonical Android PDF viewer path; no legacy custom renderer.'
-      - name: Sync Capacitor
-        run: npx cap sync android
+      - name: Sync Capacitor and reapply native patches
+        run: |
+          set -euo pipefail
+          npx cap sync android
+          node scripts/prepare-android.mjs
+          node scripts/patch-pdf-canonical.mjs
+          node scripts/patch-main-activity.mjs
       - name: Setup Java
         uses: actions/setup-java@v4
         with:
