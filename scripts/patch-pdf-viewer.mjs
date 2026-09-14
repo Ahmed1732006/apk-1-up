@@ -8,14 +8,14 @@ if (!existsSync(p)) throw new Error('PdfViewerActivity.java missing');
 let s = readFileSync(p, 'utf8');
 const start = s.indexOf('    private class PdfPageView extends View {');
 if (start < 0) throw new Error('PdfPageView not found');
-const end = s.indexOf('\n    }\n}\n', start);
-if (end < 0) throw new Error('viewer class end not found');
+const end = s.lastIndexOf('\n    }\n}');
+if (end < start) throw new Error('viewer class end not found');
 
-s = s.replace(/import android\\.view\\.ViewConfiguration;\\n/g, '');
-s = s.replace(/private PdfPageView pageView;/g, 'private PdfDocumentView pageView;');
-s = s.replace(/pageView = new PdfPageView\\(\\);/g, 'pageView = new PdfDocumentView();');
-s = s.replace(/\\s*pageView\\.setPageChangedListener\\(p -> \\{ currentPage = p; updateLabel\\(\\); \\}\\);\\s*/g, '\\n            ');
-s = s.replace(/pageView\\.loadPage\\(\\);/g, 'pageView.loadDocument();');
+s = s.replace(/import android\.view\.ViewConfiguration;\n/g, '');
+s = s.replaceAll('private PdfPageView pageView;', 'private PdfDocumentView pageView;');
+s = s.replaceAll('pageView = new PdfPageView();', 'pageView = new PdfDocumentView();');
+s = s.replaceAll('pageView.setPageChangedListener(p -> { currentPage = p; updateLabel(); });', '');
+s = s.replaceAll('pageView.loadPage();', 'pageView.loadDocument();');
 
 const cls = `    private class PdfDocumentView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -23,20 +23,22 @@ const cls = `    private class PdfDocumentView extends View {
         private final android.os.Handler main = new android.os.Handler(android.os.Looper.getMainLooper());
         private final java.util.Map<Integer, Bitmap> cache = new java.util.HashMap<>();
         private final java.util.Set<Integer> loading = new java.util.HashSet<>();
-        private ScaleGestureDetector scaleDetector;
-        private GestureDetector gestureDetector;
+        private final ScaleGestureDetector scaleDetector;
+        private final GestureDetector gestureDetector;
         private float[] widths;
         private float[] heights;
         private float fitScale = 1f;
         private float scale = 1f;
         private float scrollY = 0f;
         private float offsetX = 0f;
-        private float lastX, lastY;
-        private float lastFocusX, lastFocusY;
+        private float lastX;
+        private float lastY;
+        private float focusX;
+        private float focusY;
         private boolean ready = false;
         private boolean scaling = false;
         private boolean stopped = false;
-        private boolean renderingStarted = false;
+        private boolean started = false;
         private ParcelFileDescriptor bgDescriptor;
         private PdfRenderer bgRenderer;
 
@@ -45,14 +47,12 @@ const cls = `    private class PdfDocumentView extends View {
             setBackgroundColor(Color.rgb(25, 32, 42));
             setFocusable(true);
             setClickable(true);
-            setLayerType(View.LAYER_TYPE_SOFTWARE, null);
-
             scaleDetector = new ScaleGestureDetector(PdfViewerActivity.this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 @Override public boolean onScaleBegin(ScaleGestureDetector d) {
                     if (!ready) return false;
                     scaling = true;
-                    lastFocusX = d.getFocusX();
-                    lastFocusY = d.getFocusY();
+                    focusX = d.getFocusX();
+                    focusY = d.getFocusY();
                     getParent().requestDisallowInterceptTouchEvent(true);
                     return true;
                 }
@@ -61,14 +61,14 @@ const cls = `    private class PdfDocumentView extends View {
                     float old = scale;
                     float next = Math.max(fitScale, Math.min(5f, old * d.getScaleFactor()));
                     if (Math.abs(next - old) < 0.0005f) return true;
-                    float docY = (scrollY + lastFocusY) / old;
-                    float contentX = (lastFocusX - centeredLeft(old) - offsetX) / old;
+                    float docY = (scrollY + focusY) / old;
+                    float docX = (focusX - centeredLeft(old) - offsetX) / old;
                     scale = next;
-                    scrollY = docY * scale - lastFocusY;
-                    offsetX = lastFocusX - centeredLeft(scale) - contentX * scale;
+                    scrollY = docY * scale - focusY;
+                    offsetX = focusX - centeredLeft(scale) - docX * scale;
                     clamp();
-                    lastFocusX = d.getFocusX();
-                    lastFocusY = d.getFocusY();
+                    focusX = d.getFocusX();
+                    focusY = d.getFocusY();
                     invalidate();
                     return true;
                 }
@@ -77,7 +77,6 @@ const cls = `    private class PdfDocumentView extends View {
                     getParent().requestDisallowInterceptTouchEvent(false);
                 }
             });
-
             gestureDetector = new GestureDetector(PdfViewerActivity.this, new GestureDetector.SimpleOnGestureListener() {
                 @Override public boolean onDown(MotionEvent e) { return true; }
                 @Override public boolean onDoubleTap(MotionEvent e) {
@@ -90,8 +89,8 @@ const cls = `    private class PdfDocumentView extends View {
         }
 
         void loadDocument() {
-            if (renderingStarted) return;
-            renderingStarted = true;
+            if (started) return;
+            started = true;
             executor.execute(() -> {
                 ParcelFileDescriptor fd = null;
                 PdfRenderer r = null;
@@ -100,34 +99,35 @@ const cls = `    private class PdfDocumentView extends View {
                     r = new PdfRenderer(fd);
                     bgDescriptor = fd;
                     bgRenderer = r;
-                    final int count = r.getPageCount();
-                    final float[] ws = new float[count];
-                    final float[] hs = new float[count];
+                    int count = r.getPageCount();
+                    float[] ws = new float[count];
+                    float[] hs = new float[count];
                     for (int i = 0; i < count; i++) {
                         PdfRenderer.Page page = r.openPage(i);
                         ws[i] = Math.max(1, page.getWidth());
                         hs[i] = Math.max(1, page.getHeight());
                         page.close();
                     }
+                    final float[] finalWs = ws;
+                    final float[] finalHs = hs;
+                    final int finalCount = count;
                     main.post(() -> {
                         if (stopped) return;
-                        widths = ws;
-                        heights = hs;
-                        pageCount = count;
-                        ready = count > 0;
+                        widths = finalWs;
+                        heights = finalHs;
+                        pageCount = finalCount;
+                        ready = finalCount > 0;
                         fitScale = computeFitScale();
                         scale = fitScale;
                         scrollY = 0f;
                         offsetX = 0f;
+                        if (pageLabel != null) pageLabel.setText("صفحة 1 / " + pageCount);
                         invalidate();
                     });
                 } catch (Throwable e) {
                     try { if (r != null) r.close(); } catch (Throwable ignored) {}
                     try { if (fd != null) fd.close(); } catch (Throwable ignored) {}
-                    main.post(() -> {
-                        ready = false;
-                        Toast.makeText(PdfViewerActivity.this, "تعذر عرض صفحات PDF", Toast.LENGTH_LONG).show();
-                    });
+                    main.post(() -> Toast.makeText(PdfViewerActivity.this, "تعذر عرض صفحات PDF", Toast.LENGTH_LONG).show());
                 }
             });
         }
@@ -157,46 +157,48 @@ const cls = `    private class PdfDocumentView extends View {
             offsetX = Math.max(-mx, Math.min(mx, offsetX));
         }
         private void zoomTo(float next, float fx, float fy) {
+            if (!ready) return;
             float old = scale;
+            next = Math.max(fitScale, Math.min(5f, next));
             if (Math.abs(next - old) < 0.0005f) return;
             float docY = (scrollY + fy) / old;
-            float cx = (fx - centeredLeft(old) - offsetX) / old;
-            scale = Math.max(fitScale, Math.min(5f, next));
+            float docX = (fx - centeredLeft(old) - offsetX) / old;
+            scale = next;
             scrollY = docY * scale - fy;
-            offsetX = fx - centeredLeft(scale) - cx * scale;
+            offsetX = fx - centeredLeft(scale) - docX * scale;
             clamp();
             invalidate();
         }
 
-        private void requestPage(final int index, final float drawScale) {
-            if (index < 0 || index >= pageCount || loading.contains(index) || stopped || bgRenderer == null) return;
+        private void requestPage(final int index) {
+            if (index < 0 || index >= pageCount || stopped || bgRenderer == null || loading.contains(index)) return;
             Bitmap existing = cache.get(index);
             if (existing != null && !existing.isRecycled()) return;
             loading.add(index);
             executor.execute(() -> {
-                Bitmap b = null;
+                Bitmap result = null;
                 try {
                     PdfRenderer.Page page = bgRenderer.openPage(index);
-                    int targetWidth = Math.max(dp(900), Math.min(1800, (int)(getWidth() * 1.75f)));
-                    float ratio = page.getHeight() / (float)Math.max(1, page.getWidth());
-                    int targetHeight = Math.max(dp(900), Math.min(2600, (int)(targetWidth * ratio)));
-                    b = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
-                    b.eraseColor(Color.WHITE);
-                    page.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                    int targetWidth = Math.max(dp(900), Math.min(1800, (int) (getWidth() * 1.75f)));
+                    float ratio = page.getHeight() / (float) Math.max(1, page.getWidth());
+                    int targetHeight = Math.max(dp(900), Math.min(2600, (int) (targetWidth * ratio)));
+                    result = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
+                    result.eraseColor(Color.WHITE);
+                    page.render(result, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
                     page.close();
-                } catch (Throwable e) {
-                    if (b != null && !b.isRecycled()) b.recycle();
-                    b = null;
+                } catch (Throwable ignored) {
+                    if (result != null && !result.isRecycled()) result.recycle();
+                    result = null;
                 }
-                final Bitmap result = b;
+                final Bitmap readyBitmap = result;
                 main.post(() -> {
                     loading.remove(index);
                     if (stopped) {
-                        if (result != null && !result.isRecycled()) result.recycle();
+                        if (readyBitmap != null && !readyBitmap.isRecycled()) readyBitmap.recycle();
                         return;
                     }
-                    if (result != null && !result.isRecycled()) {
-                        Bitmap old = cache.put(index, result);
+                    if (readyBitmap != null && !readyBitmap.isRecycled()) {
+                        Bitmap old = cache.put(index, readyBitmap);
                         if (old != null && !old.isRecycled()) old.recycle();
                         evictFarPages(index);
                     }
@@ -217,35 +219,32 @@ const cls = `    private class PdfDocumentView extends View {
             }
         }
 
-        private void updateCurrentPage(float firstY) {
+        private void updateCurrentPage() {
             if (pageLabel == null || heights == null || heights.length == 0) return;
             float y = gap() - scrollY;
-            int current = 0;
             float marker = getHeight() * 0.30f;
+            int current = 0;
             for (int i = 0; i < heights.length; i++) {
-                float h = pageHeight(i, scale);
-                if (y + h >= marker) { current = i; break; }
-                y += h + gap();
+                float ph = pageHeight(i, scale);
+                if (y + ph >= marker) { current = i; break; }
+                y += ph + gap();
             }
-            if (currentPage != current) {
-                currentPage = current;
-                pageLabel.setText("صفحة " + (current + 1) + " / " + pageCount);
-            }
+            if (currentPage != current) currentPage = current;
+            pageLabel.setText("صفحة " + (current + 1) + " / " + pageCount);
         }
 
         @Override protected void onDraw(Canvas c) {
             super.onDraw(c);
             if (!ready || heights == null) return;
             float y = gap() - scrollY;
-            int firstVisible = 0;
+            int first = 0;
             for (int i = 0; i < pageCount; i++) {
                 float ph = pageHeight(i, scale);
-                if (y + ph >= 0) { firstVisible = i; break; }
+                if (y + ph >= 0) { first = i; break; }
                 y += ph + gap();
             }
-            for (int i = Math.max(0, firstVisible - 1); i < Math.min(pageCount, firstVisible + 4); i++) {
-                requestPage(i, scale);
-            }
+            for (int i = Math.max(0, first - 1); i < Math.min(pageCount, first + 4); i++) requestPage(i);
+
             y = gap() - scrollY;
             for (int i = 0; i < pageCount; i++) {
                 float ph = pageHeight(i, scale);
@@ -254,8 +253,9 @@ const cls = `    private class PdfDocumentView extends View {
                     RectF dst = new RectF(left, y, left + widths[i] * scale, y + ph);
                     Bitmap b = cache.get(i);
                     paint.setColor(Color.WHITE);
-                    if (b != null && !b.isRecycled()) c.drawBitmap(b, null, dst, paint);
-                    else {
+                    if (b != null && !b.isRecycled()) {
+                        c.drawBitmap(b, null, dst, paint);
+                    } else {
                         c.drawRect(dst, paint);
                         paint.setColor(Color.rgb(120, 130, 145));
                         paint.setTextSize(dp(14));
@@ -264,9 +264,9 @@ const cls = `    private class PdfDocumentView extends View {
                     }
                 }
                 y += ph + gap();
-                if (y > getHeight() && i > firstVisible + 4) break;
+                if (y > getHeight() && i > first + 4) break;
             }
-            updateCurrentPage(firstVisible == 0 ? 0 : firstVisible);
+            updateCurrentPage();
         }
 
         @Override public boolean onTouchEvent(MotionEvent e) {
