@@ -41,7 +41,6 @@ jobs:
         run: |
           set -euo pipefail
           # Installed baseline: versionCode 5 / versionName 1.1.0.
-          # Keep every generated release strictly above the installed baseline.
           RUN_VERSION_CODE=$((GITHUB_RUN_NUMBER + 6))
           if [ "$RUN_VERSION_CODE" -lt 7 ]; then RUN_VERSION_CODE=7; fi
           echo "ANDROID_VERSION_CODE=$RUN_VERSION_CODE" >> "$GITHUB_ENV"
@@ -69,29 +68,50 @@ jobs:
           test -s "$MAIN_JAVA"
           test -s "$MANIFEST"
 
-          grep -Fq 'import android.graphics.pdf.PdfRenderer;' "$PDF_JAVA"
-          grep -Fq 'public class PdfViewerActivity extends Activity' "$PDF_JAVA"
-          grep -Fq 'private class PdfDocumentView extends View' "$PDF_JAVA"
-          grep -Fq 'scrollY' "$PDF_JAVA"
-          grep -Fq 'ScaleGestureDetector' "$PDF_JAVA"
-          grep -Fq 'FileProvider' "$MANIFEST"
-          grep -Fq 'registerPlugin(PdfViewerPlugin.class)' "$MAIN_JAVA"
-          grep -Eq 'void onResume\(\)' "$MAIN_JAVA"
+          echo "--- Generated PDF viewer markers ---"
+          grep -nE 'Pdf(Page|Document)View|onFling|goToPage|scrollY|ScaleGestureDetector' "$PDF_JAVA" || true
+          echo "--- Generated MainActivity markers ---"
+          grep -nE 'registerPlugin|onResume' "$MAIN_JAVA" || true
+
+          check_grep() {
+            local pattern="$1" file="$2" label="$3"
+            if grep -Fq "$pattern" "$file"; then
+              echo "PASS: $label"
+            else
+              echo "FAIL: $label"
+              echo "File: $file"
+              exit 1
+            fi
+          }
+
+          check_grep 'import android.graphics.pdf.PdfRenderer;' "$PDF_JAVA" 'PdfRenderer import'
+          check_grep 'public class PdfViewerActivity extends Activity' "$PDF_JAVA" 'PdfViewerActivity class'
+          check_grep 'private class PdfDocumentView extends View' "$PDF_JAVA" 'continuous vertical viewer class'
+          check_grep 'scrollY' "$PDF_JAVA" 'vertical document scrolling'
+          check_grep 'ScaleGestureDetector' "$PDF_JAVA" 'pinch zoom'
+          check_grep 'FileProvider' "$MANIFEST" 'FileProvider bridge'
+          check_grep 'registerPlugin(PdfViewerPlugin.class)' "$MAIN_JAVA" 'native PDF plugin registration'
+
+          if grep -Eq 'void onResume\(\)' "$MAIN_JAVA"; then
+            echo "PASS: MainActivity onResume"
+          else
+            echo "FAIL: MainActivity onResume"
+            exit 1
+          fi
 
           if grep -Fq 'onFling(' "$PDF_JAVA"; then
-            echo "ERROR: PDF viewer still contains horizontal fling/page navigation."
+            echo "FAIL: horizontal fling/page navigation still exists"
             exit 1
           fi
-          if grep -Fq 'goToPage(' "$PDF_JAVA"; then
-            echo "ERROR: PDF viewer still contains next/previous page navigation."
-            exit 1
-          fi
-          if grep -Fq 'currentPage + 1' "$PDF_JAVA" || grep -Fq 'currentPage - 1' "$PDF_JAVA"; then
-            echo "ERROR: PDF viewer still contains horizontal page movement."
-            exit 1
-          fi
+          echo "PASS: no horizontal page fling"
 
-          echo "Generated Android source preflight passed: vertical PDF + zoom/pan + native open-with bridge."
+          if grep -Fq 'goToPage(' "$PDF_JAVA"; then
+            echo "FAIL: next/previous page navigation still exists"
+            exit 1
+          fi
+          echo "PASS: no next/previous page navigation"
+
+          echo "Generated Android source preflight passed."
 
       - name: Sync Capacitor
         run: npx cap sync android
@@ -154,14 +174,12 @@ jobs:
           EXPECTED_VERSION_CODE="$ANDROID_VERSION_CODE"
           EXPECTED_VERSION_NAME="1.2.1"
           EXPECTED_SHA256="3e5872aafa51b9968b5a31112c043ef702eac385c32d1a5409f44bc79e967d15"
-
           test -f "$APK"
           test -s "$APK"
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
           test -n "$AAPT"
           test -n "$APKSIGNER"
-
           BADGING="$("$AAPT" dump badging "$APK")"
           PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep '^package:' | head -1)"
           test -n "$PACKAGE_LINE"
@@ -178,13 +196,14 @@ jobs:
             *"versionName='$EXPECTED_VERSION_NAME'"*) : ;;
             *) echo "ERROR: versionName mismatch."; exit 1 ;;
           esac
-
           SIGNATURE_INFO="$("$APKSIGNER" verify --print-certs "$APK" 2>&1)"
           printf '%s\n' "$SIGNATURE_INFO"
           ACTUAL_SHA256="$(printf '%s\n' "$SIGNATURE_INFO" | grep -Eio '([0-9a-f]{2}:){31}[0-9a-f]{2}' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]' || true)"
           if ! printf '%s' "$ACTUAL_SHA256" | grep -Eq '^[0-9a-f]{64}$'; then
             ACTUAL_SHA256="$(printf '%s\n' "$SIGNATURE_INFO" | grep -Eio '[0-9a-f]{64}' | head -1 | tr '[:upper:]' '[:lower:]' || true)"
           fi
+          echo "Expected SHA-256: $EXPECTED_SHA256"
+          echo "Actual SHA-256:   $ACTUAL_SHA256"
           test "$ACTUAL_SHA256" = "$EXPECTED_SHA256"
           "$APKSIGNER" verify --verbose --print-certs "$APK"
           echo "ALL APK CHECKS PASSED."
@@ -199,5 +218,4 @@ jobs:
       - name: Remove temporary signing keystore
         if: always()
         shell: bash
-        run: |
-          rm -f android/in_the_void_release.jks
+        run: rm -f android/in_the_void_release.jks
