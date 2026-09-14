@@ -1,4 +1,4 @@
-name: Build IN THE VOID APK - PDF Fixed v3
+name: Build IN THE VOID APK - Canonical PDF
 
 on:
   workflow_dispatch:
@@ -20,8 +20,6 @@ jobs:
         run: test -s google-services.json
       - name: Prepare web bundle
         run: npm run build:web
-      - name: Patch web runtime - online first + canonical PDF routing
-        run: node scripts/patch-web-runtime.mjs
       - name: Add Android project
         run: npx cap add android
       - name: Generate launcher and splash assets
@@ -30,32 +28,22 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RUN_VERSION_CODE=$((GITHUB_RUN_NUMBER + 20))
+          RUN_VERSION_CODE=$((GITHUB_RUN_NUMBER + 30))
           echo "ANDROID_VERSION_CODE=$RUN_VERSION_CODE" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=1.2.2" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.2.3" >> "$GITHUB_ENV"
       - name: Apply Android project fixes
         run: node scripts/prepare-android.mjs
-      - name: Add native PDF URL bridge
-        run: node scripts/patch-pdf-plugin-url.mjs
-      - name: Generate continuous PDF viewer
-        run: node scripts/patch-pdf-viewer-fixed.mjs
-      - name: Isolate PDF renderer per page
-        run: node scripts/patch-pdf-viewer-v2.mjs
-      - name: Apply PDF cleanup compatibility
-        run: node scripts/fix-pdf-release-method.mjs
-      - name: Patch Capacitor MainActivity system bars
+      - name: Apply canonical PDF architecture
+        run: node scripts/patch-pdf-canonical.mjs
+      - name: Patch Capacitor MainActivity system bars and plugin registration
         run: node scripts/patch-main-activity.mjs
-      - name: Validate scripts
+      - name: Validate patch scripts
         run: |
           set -euo pipefail
           node --check scripts/prepare-android.mjs
-          node --check scripts/patch-web-runtime.mjs
-          node --check scripts/patch-pdf-plugin-url.mjs
-          node --check scripts/patch-pdf-viewer-fixed.mjs
-          node --check scripts/patch-pdf-viewer-v2.mjs
-          node --check scripts/fix-pdf-release-method.mjs
+          node --check scripts/patch-pdf-canonical.mjs
           node --check scripts/patch-main-activity.mjs
-      - name: Preflight generated sources
+      - name: Preflight canonical PDF path
         shell: bash
         run: |
           set -euo pipefail
@@ -65,18 +53,28 @@ jobs:
           test -s "$PDF_JAVA"
           test -s "$PLUGIN_JAVA"
           test -s "$MAIN_JAVA"
+          test -s www/app/index.html
+          grep -Fq 'public void openUrl(PluginCall call)' "$PLUGIN_JAVA"
+          grep -Fq 'downloadAndValidatePdf' "$PLUGIN_JAVA"
+          grep -Fq '%PDF-' "$PLUGIN_JAVA"
+          grep -Fq 'new PdfRenderer(fd)' "$PLUGIN_JAVA"
+          grep -Fq 'getPageCount()' "$PLUGIN_JAVA"
           grep -Fq 'private class PdfDocumentView extends View' "$PDF_JAVA"
+          grep -Fq 'private PdfRenderer renderer' "$PDF_JAVA"
+          grep -Fq 'renderer.openPage(index)' "$PDF_JAVA"
           grep -Fq 'ScaleGestureDetector' "$PDF_JAVA"
           grep -Fq 'scrollY' "$PDF_JAVA"
-          grep -Fq 'public void openUrl(PluginCall call)' "$PLUGIN_JAVA"
-          grep -Fq 'HttpURLConnection' "$PLUGIN_JAVA"
+          grep -Fq 'requestDisallowInterceptTouchEvent(true)' "$PDF_JAVA"
+          grep -Fq 'evictFarPages' "$PDF_JAVA"
+          grep -Fq 'PdfViewerPlugin' "$MAIN_JAVA"
           grep -Fq 'registerPlugin' "$MAIN_JAVA"
-          grep -Fq 'ivSystemBars' "$MAIN_JAVA"
-          grep -Fq 'onWindowFocusChanged' "$MAIN_JAVA"
-          grep -Fq 'downloadMaterial' www/app/index.html
+          grep -Fq 'fileName: (m.file_path ?' www/app/index.html
           grep -Fq 'PdfViewer.openUrl' www/app/index.html
-          grep -Fq 'iv-native-pdf-runtime' www/app/index.html
+          ! grep -Fq 'iv-native-pdf-runtime' www/app/index.html
           ! grep -Fq 'private class PdfPageView extends View' "$PDF_JAVA"
+          ! grep -Fq 'goToPage(' "$PDF_JAVA"
+          ! grep -Fq 'onFling(' "$PDF_JAVA"
+          echo "Canonical PDF preflight passed."
       - name: Sync Capacitor
         run: npx cap sync android
       - name: Setup Java
@@ -119,7 +117,7 @@ jobs:
           set -euo pipefail
           ./gradlew assembleRelease --no-daemon
           test -s app/build/outputs/apk/release/app-release.apk
-      - name: Verify APK identity, version and signature
+      - name: Verify APK identity, version and release signature
         shell: bash
         run: |
           set -euo pipefail
@@ -130,7 +128,7 @@ jobs:
           PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep '^package:' | head -1)"
           case "$PACKAGE_LINE" in *"name='com.inthevoid.platform'"*) : ;; *) exit 1 ;; esac
           case "$PACKAGE_LINE" in *"versionCode='$ANDROID_VERSION_CODE'"*) : ;; *) exit 1 ;; esac
-          case "$PACKAGE_LINE" in *"versionName='1.2.2'"*) : ;; *) exit 1 ;; esac
+          case "$PACKAGE_LINE" in *"versionName='1.2.3'"*) : ;; *) exit 1 ;; esac
           SIGNATURE_INFO="$("$APKSIGNER" verify --print-certs "$APK" 2>&1)"
           ACTUAL_SHA256="$(printf '%s\n' "$SIGNATURE_INFO" | grep -Eio '([0-9a-f]{2}:){31}[0-9a-f]{2}' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]' || true)"
           if ! printf '%s' "$ACTUAL_SHA256" | grep -Eq '^[0-9a-f]{64}$'; then
@@ -141,7 +139,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: IN_THE_VOID-APK-PDF-Fixed-v3
+          name: IN_THE_VOID-APK-Canonical-PDF
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Remove temporary signing keystore
