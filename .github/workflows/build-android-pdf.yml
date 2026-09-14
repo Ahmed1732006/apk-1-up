@@ -78,7 +78,7 @@ jobs:
           }
 
           require 'implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' "$GRADLE" 'official AndroidX PDF viewer dependency'
-          require 'compileSdkVersion 36' "$GRADLE" 'AndroidX PDF compile SDK'
+          require 'compileSdk = 36' "$GRADLE" 'AndroidX PDF compile SDK'
           require 'minSdkVersion 28' "$GRADLE" 'AndroidX PDF minimum SDK'
           require 'public void openUrl(PluginCall call)' "$PLUGIN_JAVA" 'native URL bridge'
           require 'downloadAndValidatePdf' "$PLUGIN_JAVA" 'complete PDF download pipeline'
