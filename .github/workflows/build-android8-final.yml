@@ -26,9 +26,6 @@ jobs:
       - run: npx cap sync android
       - run: |
           node scripts/prepare-android.mjs
-          node scripts/patch-pdf-canonical.mjs
-          node scripts/fix-pdf-web-syntax.mjs
-          node scripts/fix-pdf-java-escapes.mjs
           node scripts/patch-main-activity.mjs
           node scripts/patch-pdf-android8.mjs
       - name: Validate web JavaScript
