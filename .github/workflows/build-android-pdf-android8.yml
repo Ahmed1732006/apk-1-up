@@ -1,0 +1,145 @@
+name: Build IN THE VOID APK - Android 8 PDF
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+      - name: Install dependencies
+        run: npm install --no-audit --no-fund
+      - name: Validate Firebase Android config
+        run: test -s google-services.json
+      - name: Prepare web bundle
+        run: npm run build:web
+      - name: Add Android project
+        run: npx cap add android
+      - name: Generate launcher and splash assets
+        run: npx capacitor-assets generate --android
+      - name: Set release version
+        shell: bash
+        run: |
+          set -euo pipefail
+          echo "ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER + 50))" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.4.0" >> "$GITHUB_ENV"
+      - name: Apply base Android fixes
+        run: node scripts/prepare-android.mjs
+      - name: Apply canonical PDF download and native route
+        run: node scripts/patch-pdf-canonical.mjs
+      - name: Fix generated PDF Java escapes
+        run: node scripts/fix-pdf-java-escapes.mjs
+      - name: Patch MainActivity
+        run: node scripts/patch-main-activity.mjs
+      - name: Sync Capacitor
+        run: npx cap sync android
+      - name: Reapply native patches after sync
+        run: |
+          set -euo pipefail
+          node scripts/prepare-android.mjs
+          node scripts/patch-pdf-canonical.mjs
+          node scripts/fix-pdf-java-escapes.mjs
+          node scripts/patch-main-activity.mjs
+          node scripts/patch-pdf-android8.mjs
+      - name: Validate Android 8 PDF architecture
+        shell: bash
+        run: |
+          set -euo pipefail
+          GRADLE=android/app/build.gradle
+          ROOT=android/build.gradle
+          PDF=android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity.java
+          PLUGIN=android/app/src/main/java/com/inthevoid/platform/PdfViewerPlugin.java
+          HTML=www/app/index.html
+          MANIFEST=android/app/src/main/AndroidManifest.xml
+          test -s "$PDF"; test -s "$PLUGIN"; test -s "$HTML"; test -s "$MANIFEST"
+          grep -Fq 'minSdkVersion 26' "$GRADLE"
+          if grep -Fq 'androidx.pdf:pdf-viewer-fragment' "$GRADLE"; then echo 'FAIL: AndroidX PDF viewer still present'; exit 1; fi
+          grep -Fq 'android.graphics.pdf.PdfRenderer' "$PDF"
+          grep -Fq 'class PdfDocumentView' "$PDF"
+          grep -Fq 'ScaleGestureDetector' "$PDF"
+          grep -Fq 'onScroll(MotionEvent' "$PDF"
+          grep -Fq 'RENDER_MODE_FOR_DISPLAY' "$PDF"
+          grep -Fq 'PdfViewer.openUrl' "$HTML"
+          grep -Fq 'downloadAndValidatePdf' "$PLUGIN"
+          grep -Fq 'containsPdfHeader' "$PLUGIN"
+          grep -Fq 'containsPdfEof' "$PLUGIN"
+          grep -Fq 'PdfViewerActivity' "$MANIFEST"
+          if grep -Fq 'PdfViewerFragment' "$PDF"; then echo 'FAIL: AndroidX viewer activity still present'; exit 1; fi
+          if grep -Fq 'private class PdfPageView' "$PDF"; then echo 'FAIL: legacy page viewer remains'; exit 1; fi
+          if grep -Fq 'iv-native-pdf-runtime' "$HTML"; then echo 'FAIL: legacy web PDF runtime remains'; exit 1; fi
+          echo 'PASS: Android 8+ native PDF path, complete download validation, pinch zoom and pan.'
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '21'
+          cache: gradle
+      - name: Setup Android SDK
+        uses: android-actions/setup-android@v3
+        with:
+          packages: tools platform-tools platforms;android-36
+      - name: Validate release signing secrets
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "$ANDROID_KEYSTORE_BASE64"; test -n "$ANDROID_KEYSTORE_PASSWORD"; test -n "$ANDROID_KEY_ALIAS"; test -n "$ANDROID_KEY_PASSWORD"
+      - name: Restore release keystore
+        env:
+          ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+        run: |
+          printf '%s' "$ANDROID_KEYSTORE_BASE64" | base64 --decode > android/in_the_void_release.jks
+          chmod 600 android/in_the_void_release.jks
+      - name: Build release APK
+        working-directory: android
+        shell: bash
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/in_the_void_release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          ./gradlew assembleRelease --no-daemon
+          DIR=app/build/outputs/apk/release
+          UNSIGNED=$(find "$DIR" -maxdepth 1 -type f -name '*unsigned*.apk' | head -1 || true)
+          if [ -z "$UNSIGNED" ]; then UNSIGNED="$DIR/app-release.apk"; fi
+          test -s "$UNSIGNED"
+          BT=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BT/zipalign" -f 4 "$UNSIGNED" "$DIR/app-release-aligned.apk"
+          "$BT/apksigner" sign --ks "$ANDROID_KEYSTORE_PATH" --ks-key-alias "$ANDROID_KEY_ALIAS" --ks-pass "env:ANDROID_KEYSTORE_PASSWORD" --key-pass "env:ANDROID_KEY_PASSWORD" --out "$DIR/app-release.apk" "$DIR/app-release-aligned.apk"
+          rm -f "$DIR/app-release-aligned.apk"
+          if [ "$UNSIGNED" != "$DIR/app-release.apk" ]; then rm -f "$UNSIGNED"; fi
+      - name: Verify APK identity and signature
+        shell: bash
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          APKSIGNER=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          BADGING=$("$AAPT" dump badging "$APK")
+          printf '%s\n' "$BADGING" | grep -F "name='com.inthevoid.platform'"
+          printf '%s\n' "$BADGING" | grep -F "versionName='1.4.0'"
+          SIG=$("$APKSIGNER" verify --print-certs "$APK" 2>&1)
+          HASH=$(printf '%s\n' "$SIG" | grep -Eio '([0-9a-f]{2}:){31}[0-9a-f]{2}' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]' || true)
+          test "$HASH" = "3e5872aafa51b9968b5a31112c043ef702eac385c32d1a5409f44bc79e967d15"
+          "$APKSIGNER" verify --verbose --print-certs "$APK"
+      - name: Upload final APK
+        uses: actions/upload-artifact@v4
+        with:
+          name: IN_THE_VOID-APK-Android8-PDF-Final
+          path: android/app/build/outputs/apk/release/app-release.apk
+          if-no-files-found: error
+      - name: Remove temporary keystore
+        if: always()
+        run: rm -f android/in_the_void_release.jks
