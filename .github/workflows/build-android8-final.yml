@@ -1,4 +1,4 @@
-name: Build IN THE VOID Android 8 Final
+name: Build IN THE VOID Android 7 Final
 on:
   push:
   workflow_dispatch:
@@ -17,7 +17,7 @@ jobs:
       - name: Version
         run: |
           echo "ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER + 60))" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=1.4.9" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.5.0" >> "$GITHUB_ENV"
       - run: node scripts/prepare-android.mjs
       - run: node scripts/patch-pdf-canonical.mjs
       - run: node scripts/fix-pdf-web-syntax.mjs
@@ -27,6 +27,7 @@ jobs:
       - run: |
           node scripts/patch-pdf-android8.mjs
           node scripts/finalize-pdf-web-route.mjs
+          sed -i -E 's/minSdkVersion[[:space:]]+(28|26)/minSdkVersion 24/g' android/app/build.gradle
       - name: Validate web JavaScript and content
         run: |
           set -euo pipefail
@@ -39,7 +40,7 @@ jobs:
       - name: Preflight
         run: |
           set -euo pipefail
-          grep -Fq 'minSdkVersion 26' android/app/build.gradle
+          grep -Fq 'minSdkVersion 24' android/app/build.gradle
           ! grep -Fq 'androidx.pdf:pdf-viewer-fragment' android/app/build.gradle
           grep -Fq 'android.graphics.pdf.PdfRenderer' android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity.java
           grep -Fq 'ScaleGestureDetector' android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity.java
@@ -86,7 +87,7 @@ jobs:
           APKS=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
           B=$("$AAPT" dump badging "$APK")
           printf '%s\n' "$B" | grep -F "name='com.inthevoid.platform'"
-          printf '%s\n' "$B" | grep -F "versionName='1.4.9'"
+          printf '%s\n' "$B" | grep -F "versionName='1.5.0'"
           "$APKS" verify --verbose --print-certs "$APK"
           mkdir -p /tmp/apkcheck
           unzip -q -o "$APK" 'classes*.dex' 'assets/public/app/index.html' -d /tmp/apkcheck
@@ -98,10 +99,10 @@ jobs:
           ! grep -Fq 'iv-native-pdf-runtime' /tmp/apkcheck/assets/public/app/index.html
       - name: Prepare test-only PDF proxy after release APK is built
         run: node scripts/add-pdf-smoke-proxy.mjs
-      - name: Android 8 emulator smoke test
+      - name: Android 7 emulator smoke test
         uses: reactivecircus/android-emulator-runner@v2
         with:
-          api-level: 26
+          api-level: 24
           target: default
           arch: x86
           profile: pixel_2
@@ -112,8 +113,10 @@ jobs:
             adb uninstall com.inthevoid.platform || true
             adb install android/app/build/outputs/apk/debug/app-debug.apk
             adb shell am start -n com.inthevoid.platform/.MainActivity
-            sleep 8
+            sleep 10
             adb shell dumpsys activity activities | grep -F 'com.inthevoid.platform/.MainActivity'
+            adb exec-out screencap -p > /tmp/main.png
+            python3 -c "from PIL import Image; im=Image.open('/tmp/main.png').convert('L'); vals=list(im.getdata()); assert min(vals)<245, 'MainActivity screenshot is blank'; assert sum(v<220 for v in vals)>1000, 'MainActivity did not render visible content'; print('Android 7 MainActivity rendered visible content.')"
             python3 scripts/create-smoke-pdf.py /tmp/smoke.pdf
             adb push /tmp/smoke.pdf /data/local/tmp/smoke.pdf
             adb shell run-as com.inthevoid.platform cp /data/local/tmp/smoke.pdf files/smoke.pdf
@@ -121,10 +124,10 @@ jobs:
             sleep 5
             adb shell dumpsys activity activities | grep -F 'com.inthevoid.platform/.PdfViewerActivity'
             adb exec-out screencap -p > /tmp/pdf-viewer.png
-            python3 -c "from PIL import Image; im=Image.open('/tmp/pdf-viewer.png').convert('L'); crop=im.crop((0,80,im.width,im.height-80)); vals=list(crop.getdata()); assert min(vals)<40, 'PDF viewer screenshot is blank/white'; assert sum(v<80 for v in vals)>500, 'PDF page did not render visible dark content'; print('Android 8 PDF viewer rendered visible content.')"
+            python3 -c "from PIL import Image; im=Image.open('/tmp/pdf-viewer.png').convert('L'); crop=im.crop((0,80,im.width,im.height-80)); vals=list(crop.getdata()); assert min(vals)<40, 'PDF viewer screenshot is blank/white'; assert sum(v<80 for v in vals)>500, 'PDF page did not render visible dark content'; print('Android 7 PDF viewer rendered visible content.')"
       - uses: actions/upload-artifact@v4
         with:
-          name: IN_THE_VOID-APK-Android8-Final
+          name: IN_THE_VOID-APK-Android7-Final
           path: android/app/build/outputs/apk/release/app-release.apk
       - if: always()
         run: rm -f android/in_the_void_release.jks
