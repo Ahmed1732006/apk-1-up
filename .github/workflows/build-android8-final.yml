@@ -17,7 +17,7 @@ jobs:
       - name: Version
         run: |
           echo "ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER + 60))" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=1.4.6" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.4.7" >> "$GITHUB_ENV"
       - run: node scripts/prepare-android.mjs
       - run: node scripts/patch-pdf-canonical.mjs
       - run: node scripts/fix-pdf-web-syntax.mjs
@@ -86,7 +86,7 @@ jobs:
           APKS=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
           B=$("$AAPT" dump badging "$APK")
           printf '%s\n' "$B" | grep -F "name='com.inthevoid.platform'"
-          printf '%s\n' "$B" | grep -F "versionName='1.4.6'"
+          printf '%s\n' "$B" | grep -F "versionName='1.4.7'"
           "$APKS" verify --verbose --print-certs "$APK"
           mkdir -p /tmp/apkcheck
           unzip -q -o "$APK" 'classes*.dex' 'assets/public/app/index.html' -d /tmp/apkcheck
@@ -110,16 +110,16 @@ jobs:
             adb shell am start -n com.inthevoid.platform/.MainActivity
             sleep 8
             adb shell dumpsys activity activities | grep -F 'com.inthevoid.platform/.MainActivity'
-            echo 'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA0IDAgUiA+PiA+PiAvQ29udGVudHMgNSAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgPj4KZW5kb2JqCjUgMCBvYmoKPDwgL0xlbmd0aCA4OCA+PgpzdHJlYW0KcQowIDAgMCByZwoxMDAgNTAwIDQxMiAxODAgcmUKZgpRCkJUCi9GMSAzMCBUZgoxIDEgMSByZwoxNTAgNTgwIFRkCihTTU9LRSBQREYgT0spIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDI0MSAwMDAwMCBuIAowMDAwMDAzMTYgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTMKJSVFT0YK' | base64 -d > /tmp/smoke.pdf
-            adb push /tmp/smoke.pdf /sdcard/smoke.pdf
-            adb shell am start -n com.inthevoid.platform/.PdfViewerActivity --es pdf_path /sdcard/smoke.pdf --es pdf_name smoke-test.pdf
+            echo 'JVBERi0xLjQKMSAwIG9iago8PCAvVHlwZSAvQ2F0YWxvZyAvUGFnZXMgMiAwIFIgPj4KZW5kb2JqCjIgMCBvYmoKPDwgL1R5cGUgL1BhZ2VzIC9LaWRzIFszIDAgUl0gL0NvdW50IDEgPj4KZW5kb2JqCjMgMCBvYmoKPDwgL1R5cGUgL1BhZ2UgL1BhcmVudCAyIDAgUiAvTWVkaWFCb3ggWzAgMCA2MTIgNzkyXSAvUmVzb3VyY2VzIDw8IC9Gb250IDw8IC9GMSA0IDAgUiA+PiA+PiAvQ29udGVudHMgNSAwIFIgPj4KZW5kb2JqCjQgMCBvYmoKPDwgL1R5cGUgL0ZvbnQgL1N1YnR5cGUgL1R5cGUxIC9CYXNlRm9udCAvSGVsdmV0aWNhLUJvbGQgPj4KZW5kb2JqCjUgMCBvYmoKPDwgL0xlbmd0aCA4OCA+PgpzdHJlYW0KcQowIDAgMCByZwoxMDAgNTAwIDQxMiAxODAgcmUKZgpRCkJUCi9GMSAzMCBUZgoxIDEgMSByZwoxNTAgNTgwIFRkCihTTU9LRSBQREYgT0spIFRqCkVUCmVuZHN0cmVhbQplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmIAowMDAwMDAwMDA5IDAwMDAwIG4gCjAwMDAwMDA1OCAwMDAwMCBuIAowMDAwMDAwMTE1IDAwMDAwIG4gCjAwMDAwMDI0MSAwMDAwMCBuIAowMDAwMDMDMTYgMDAwMDAgbiAKdHJhaWxlcgo8PCAvU2l6ZSA2IC9Sb290IDEgMCBSID4+CnN0YXJ0eHJlZgo0NTMKJSVFT0YK' | base64 -d > /tmp/smoke.pdf
+            adb push /tmp/smoke.pdf /data/local/tmp/smoke.pdf
+            adb shell run-as com.inthevoid.platform cp /data/local/tmp/smoke.pdf files/smoke.pdf
+            adb shell run-as com.inthevoid.platform am start -n com.inthevoid.platform/.PdfViewerActivity --es pdf_path /data/data/com.inthevoid.platform/files/smoke.pdf --es pdf_name smoke-test.pdf
             sleep 5
             adb shell dumpsys activity activities | grep -F 'com.inthevoid.platform/.PdfViewerActivity'
             adb exec-out screencap -p > /tmp/pdf-viewer.png
             python3 - <<'PY'
             from PIL import Image
             im=Image.open('/tmp/pdf-viewer.png').convert('L')
-            # Require meaningful non-white content beyond the status/navigation bars.
             crop=im.crop((0, 80, im.width, im.height-80))
             vals=list(crop.getdata())
             assert min(vals) < 40, 'PDF viewer screenshot is blank/white'
