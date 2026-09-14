@@ -69,6 +69,8 @@ for (const name of readdirSync(root)) {
   if (forbidden.some(x => name.toLowerCase().includes(x))) throw new Error(`Refusing to package secret file: ${name}`);
 }
 
+// Keep the existing app system-bar setup. PDF-specific lifecycle/plugin wiring
+// is owned exclusively by patch-main-activity.mjs so there is one owner.
 const mainJavaRoot = join(app, 'src', 'main', 'java');
 function findMainActivity(dir){
   if(!existsSync(dir)) return null;
@@ -91,11 +93,6 @@ if(mainActivity){
         if (android.os.Build.VERSION.SDK_INT >= 26) w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         if (android.os.Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);
     }`);
-  }
-  if(!t.includes('public void onResume()')){
-    const idx=t.lastIndexOf('\n}');
-    if(idx<0) throw new Error('Could not patch MainActivity onResume.');
-    t=t.slice(0,idx)+`\n    @Override public void onResume() {\n        super.onResume();\n        ivSystemBars();\n    }\n`+t.slice(idx);
   }
   writeFileSync(mainActivity,t);
 }
