@@ -17,7 +17,7 @@ jobs:
       - name: Version
         run: |
           echo "ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER + 60))" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=1.4.2" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.4.3" >> "$GITHUB_ENV"
       - run: node scripts/prepare-android.mjs
       - run: node scripts/patch-pdf-canonical.mjs
       - run: node scripts/fix-pdf-web-syntax.mjs
@@ -26,10 +26,21 @@ jobs:
       - run: npx cap sync android
       - run: |
           node scripts/prepare-android.mjs
+          node scripts/patch-pdf-canonical.mjs
+          node scripts/fix-pdf-web-syntax.mjs
+          node scripts/fix-pdf-java-escapes.mjs
           node scripts/patch-main-activity.mjs
           node scripts/patch-pdf-android8.mjs
-      - name: Validate web JavaScript
-        run: node scripts/validate-web-js.mjs
+          node scripts/finalize-pdf-web-route.mjs
+      - name: Validate web JavaScript and content
+        run: |
+          set -euo pipefail
+          node scripts/validate-web-js.mjs
+          test -s www/app/index.html
+          grep -Fq 'IN THE VOID' www/app/index.html
+          grep -Fq 'SUPABASE_URL' www/app/index.html
+          grep -Fq 'PdfViewer.openUrl' www/app/index.html
+          ! grep -Fq 'iv-native-pdf-runtime' www/app/index.html
       - name: Preflight
         run: |
           set -euo pipefail
@@ -80,13 +91,15 @@ jobs:
           APKS=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
           B=$("$AAPT" dump badging "$APK")
           printf '%s\n' "$B" | grep -F "name='com.inthevoid.platform'"
-          printf '%s\n' "$B" | grep -F "versionName='1.4.2'"
+          printf '%s\n' "$B" | grep -F "versionName='1.4.3'"
           "$APKS" verify --verbose --print-certs "$APK"
           mkdir -p /tmp/apkcheck
           unzip -q -o "$APK" 'classes*.dex' 'assets/public/app/index.html' -d /tmp/apkcheck
           strings /tmp/apkcheck/classes.dex | grep -F 'PdfViewerActivity'
           strings /tmp/apkcheck/classes.dex | grep -F 'PdfRenderer'
           grep -Fq 'PdfViewer.openUrl' /tmp/apkcheck/assets/public/app/index.html
+          grep -Fq 'IN THE VOID' /tmp/apkcheck/assets/public/app/index.html
+          grep -Fq 'SUPABASE_URL' /tmp/apkcheck/assets/public/app/index.html
           ! grep -Fq 'iv-native-pdf-runtime' /tmp/apkcheck/assets/public/app/index.html
       - uses: actions/upload-artifact@v4
         with:
