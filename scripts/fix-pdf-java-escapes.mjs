@@ -4,11 +4,11 @@ const path = 'android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity
 if (!existsSync(path)) throw new Error(`Missing generated PDF activity: ${path}`);
 
 let source = readFileSync(path, 'utf8');
-const broken = `errorView.setText("تعذر عرض ملف PDF\n\n" + message + "\n\nالملف تم تنزيله كاملًا، لكن محرك PDF لم يستطع قراءته.");`;
+const brokenPattern = /errorView\.setText\("تعذر عرض ملف PDF[\s\S]*?الملف تم تنزيله كاملًا، لكن محرك PDF لم يستطع قراءته\."\);/;
 const fixed = String.raw`errorView.setText("تعذر عرض ملف PDF\n\n" + message + "\n\nالملف تم تنزيله كاملًا، لكن محرك PDF لم يستطع قراءته.");`;
 
-if (source.includes(broken)) {
-  source = source.replace(broken, fixed);
+if (brokenPattern.test(source)) {
+  source = source.replace(brokenPattern, fixed);
   writeFileSync(path, source);
 }
 
