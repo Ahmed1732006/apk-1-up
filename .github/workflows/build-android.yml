@@ -84,22 +84,40 @@ jobs:
       - name: Verify APK identity, version and release signature
         shell: bash
         run: |
+          set -euo pipefail
+
           APK="android/app/build/outputs/apk/release/app-release.apk"
+
           test -f "$APK"
 
           EXPECTED_VERSION_CODE=$((GITHUB_RUN_NUMBER + 2))
+
           AAPT="$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)"
           APKSIGNER="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)"
+
           test -n "$AAPT"
           test -n "$APKSIGNER"
 
           BADGING="$("$AAPT" dump badging "$APK")"
-          echo "$BADGING" | grep -F "package: name='com.inthevoid.platform' versionCode='$EXPECTED_VERSION_CODE' versionName='1.2.0'"
 
+          echo "$BADGING" | grep -F \
+            "package: name='com.inthevoid.platform' versionCode='$EXPECTED_VERSION_CODE' versionName='1.2.0'"
+
+          ACTUAL_SHA256="$(
+            "$APKSIGNER" verify --print-certs "$APK" |
+            awk -F': ' '/certificate SHA-256 digest:/ {print $2; exit}'
+          )"
+
+          test -n "$ACTUAL_SHA256"
+
+          ACTUAL_SHA256="$(echo "$ACTUAL_SHA256" | tr -d ':' | tr '[:upper:]' '[:lower:]')"
+
+          EXPECTED_SHA256="3e5872aafa51b9968b5a31112c043ef702eac3c385c32d1a5409f44bc79e967d15"
+
+          test "$ACTUAL_SHA256" = "$EXPECTED_SHA256"
           "$APKSIGNER" verify --verbose --print-certs "$APK"
-          "$APKSIGNER" verify --print-certs "$APK" | grep -F "3E:58:72:AA:FA:51:B9:96:8B:5A:31:11:2C:04:3E:F7:02:EA:C3:85:C3:2D:1A:54:09:F4:4B:C7:9E:96:7D:15"
 
-          echo "Release APK identity, version and signing certificate verified."
+          echo "Release APK identity, version and signing certificate verified successfully."
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
@@ -111,4 +129,3 @@ jobs:
       - name: Remove temporary signing keystore
         if: always()
         run: rm -f android/in_the_void_release.jks
-
