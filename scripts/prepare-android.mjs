@@ -11,8 +11,8 @@ if (!existsSync(app)) throw new Error('Android project was not generated. Run np
 const gs = join(root, 'google-services.json');
 if (existsSync(gs)) copyFileSync(gs, join(app, 'google-services.json'));
 
-const versionCode = Number(process.env.ANDROID_VERSION_CODE || 6);
-const versionName = process.env.ANDROID_VERSION_NAME || '1.2.0';
+const versionCode = Number(process.env.ANDROID_VERSION_CODE || 7);
+const versionName = process.env.ANDROID_VERSION_NAME || '1.2.1';
 const gradle = join(app, 'build.gradle');
 if (existsSync(gradle)) {
   let text = readFileSync(gradle, 'utf8');
@@ -58,16 +58,12 @@ if (existsSync(iconSource)) {
   }
 }
 
-// Refuse obvious server-side credential files from being packaged.
 const forbidden = ['firebase-adminsdk', 'service-account', 'private-key'];
 for (const name of readdirSync(root)) {
   if (['node_modules','.git','.github','android','www'].includes(name)) continue;
-  if (forbidden.some(x => name.toLowerCase().includes(x))) {
-    throw new Error(`Refusing to package secret file: ${name}`);
-  }
+  if (forbidden.some(x => name.toLowerCase().includes(x))) throw new Error(`Refusing to package secret file: ${name}`);
 }
 
-// Native PDF viewer + safe "open with another app" bridge.
 const javaBase = join(app, 'src', 'main', 'java', 'com', 'inthevoid', 'platform');
 mkdirSync(javaBase, { recursive: true });
 writeFileSync(join(javaBase, 'PdfViewerPlugin.java'), `package com.inthevoid.platform;
@@ -214,43 +210,22 @@ public class PdfViewerActivity extends Activity {
     private void applySystemBars() {
         getWindow().setStatusBarColor(Color.rgb(3,10,20));
         getWindow().setNavigationBarColor(Color.rgb(255,248,252));
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        }
+        if (android.os.Build.VERSION.SDK_INT >= 26) getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         if (android.os.Build.VERSION.SDK_INT >= 29) getWindow().setNavigationBarContrastEnforced(false);
     }
 
-    private void updateLabel() {
-        if (pageLabel != null) pageLabel.setText((currentPage + 1) + " / " + pageCount + "   •   Pinch / Pan");
-    }
-
+    private void updateLabel() { if (pageLabel != null) pageLabel.setText((currentPage + 1) + " / " + pageCount + "   •   Pinch / Pan"); }
     private Button button(String text, boolean wide, int color) {
-        Button b = new Button(this);
-        b.setText(text);
-        b.setTextColor(Color.WHITE);
-        b.setTextSize(wide ? 12 : 25);
-        b.setAllCaps(false);
-        b.setMinHeight(dp(46));
-        b.setMinWidth(dp(wide ? 120 : 48));
-        b.setPadding(dp(wide ? 10 : 2), 0, dp(wide ? 10 : 2), 0);
-        GradientDrawable bg = new GradientDrawable();
-        bg.setColor(color);
-        bg.setCornerRadius(dp(10));
-        b.setBackground(bg);
-        return b;
+        Button b = new Button(this); b.setText(text); b.setTextColor(Color.WHITE); b.setTextSize(wide ? 12 : 25); b.setAllCaps(false);
+        b.setMinHeight(dp(46)); b.setMinWidth(dp(wide ? 120 : 48)); b.setPadding(dp(wide ? 10 : 2), 0, dp(wide ? 10 : 2), 0);
+        GradientDrawable bg = new GradientDrawable(); bg.setColor(color); bg.setCornerRadius(dp(10)); b.setBackground(bg); return b;
     }
-
     private LinearLayout.LayoutParams weight(float w) { return new LinearLayout.LayoutParams(0, -1, w); }
     private int dp(int v) { return (int)(v * getResources().getDisplayMetrics().density + 0.5f); }
 
     @Override protected void onDestroy() {
-        try {
-            if (pageView != null) pageView.releaseBitmap();
-            if (renderer != null) renderer.close();
-            renderer = null;
-            if (descriptor != null) descriptor.close();
-            descriptor = null;
-        } catch (Exception ignored) {}
+        try { if (pageView != null) pageView.releaseBitmap(); if (renderer != null) renderer.close(); renderer = null; if (descriptor != null) descriptor.close(); descriptor = null; }
+        catch (Exception ignored) {}
         super.onDestroy();
     }
 
@@ -265,169 +240,65 @@ public class PdfViewerActivity extends Activity {
         private float offsetY = 0f;
         private float lastFocusX;
         private float lastFocusY;
-        private final int touchSlop;
-        private int downPage = 0;
         private OnPageChanged pageChanged;
 
         PdfPageView() {
             super(PdfViewerActivity.this);
             setBackgroundColor(Color.rgb(25,32,42));
-            touchSlop = ViewConfiguration.get(PdfViewerActivity.this).getScaledTouchSlop();
             scaleDetector = new ScaleGestureDetector(PdfViewerActivity.this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
                 @Override public boolean onScaleBegin(ScaleGestureDetector d) {
-                    lastFocusX = d.getFocusX();
-                    lastFocusY = d.getFocusY();
-                    getParent().requestDisallowInterceptTouchEvent(true);
-                    return true;
+                    lastFocusX = d.getFocusX(); lastFocusY = d.getFocusY(); getParent().requestDisallowInterceptTouchEvent(true); return true;
                 }
                 @Override public boolean onScale(ScaleGestureDetector d) {
                     if (bitmap == null) return true;
-                    float old = scale;
-                    float next = Math.max(fitScale, Math.min(5f, old * d.getScaleFactor()));
-                    if (Math.abs(next - old) < 0.0005f) return true;
-                    float contentX = (lastFocusX - pageLeft(old)) / old;
-                    float contentY = (lastFocusY - pageTop(old)) / old;
-                    scale = next;
-                    offsetX = lastFocusX - contentX * scale - centeredLeft(scale);
-                    offsetY = lastFocusY - contentY * scale - centeredTop(scale);
-                    clampOffsets();
-                    lastFocusX = d.getFocusX();
-                    lastFocusY = d.getFocusY();
-                    invalidate();
-                    return true;
+                    float old = scale, next = Math.max(fitScale, Math.min(5f, old * d.getScaleFactor()));
+                    if (Math.abs(next-old) < 0.0005f) return true;
+                    float contentX=(lastFocusX-pageLeft(old))/old, contentY=(lastFocusY-pageTop(old))/old;
+                    scale=next; offsetX=lastFocusX-contentX*scale-centeredLeft(scale); offsetY=lastFocusY-contentY*scale-centeredTop(scale); clampOffsets();
+                    lastFocusX=d.getFocusX(); lastFocusY=d.getFocusY(); invalidate(); return true;
                 }
-                @Override public void onScaleEnd(ScaleGestureDetector d) {
-                    getParent().requestDisallowInterceptTouchEvent(false);
-                }
+                @Override public void onScaleEnd(ScaleGestureDetector d) { getParent().requestDisallowInterceptTouchEvent(false); }
             });
             gestureDetector = new GestureDetector(PdfViewerActivity.this, new GestureDetector.SimpleOnGestureListener() {
                 @Override public boolean onDown(MotionEvent e) { return true; }
-                @Override public boolean onDoubleTap(MotionEvent e) {
-                    float target = scale < fitScale * 1.5f ? Math.min(5f, fitScale * 2.2f) : fitScale;
-                    zoomTo(target, e.getX(), e.getY());
-                    return true;
-                }
+                @Override public boolean onDoubleTap(MotionEvent e) { float target=scale<fitScale*1.5f?Math.min(5f,fitScale*2.2f):fitScale; zoomTo(target,e.getX(),e.getY()); return true; }
                 @Override public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
                     if (scale <= fitScale * 1.001f) return false;
-                    offsetX -= dx;
-                    offsetY -= dy;
-                    clampOffsets();
-                    invalidate();
-                    return true;
+                    offsetX -= dx; offsetY -= dy; clampOffsets(); invalidate(); return true;
                 }
-                @Override public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy) {
-                    if (scale <= fitScale * 1.001f && Math.abs(vy) < Math.abs(vx) * 0.9f && Math.abs(vx) > 700) {
-                        if (vx < 0) goToPage(currentPage + 1);
-                        else goToPage(currentPage - 1);
-                        return true;
-                    }
-                    return false;
-                }
+                @Override public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy) { return false; }
             });
         }
 
         interface OnPageChanged { void changed(int page); }
-        void setPageChangedListener(OnPageChanged l) { pageChanged = l; }
-        boolean isLoaded() { return bitmap != null; }
+        void setPageChangedListener(OnPageChanged l) { pageChanged=l; }
 
         void loadPage() {
-            if (renderer == null) return;
+            if(renderer==null) return;
             post(() -> {
                 try {
-                    PdfRenderer.Page page = renderer.openPage(currentPage);
-                    int targetWidth = Math.max(dp(1000), getWidth() * 2);
-                    float ratio = page.getHeight() / (float)Math.max(1, page.getWidth());
-                    int targetHeight = Math.max(dp(1000), (int)(targetWidth * ratio));
-                    Bitmap b = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
-                    b.eraseColor(Color.WHITE);
-                    page.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                    page.close();
-                    releaseBitmap();
-                    bitmap = b;
-                    fitScale = Math.min(getWidth() / (float)b.getWidth(), getHeight() / (float)b.getHeight());
-                    if (!Float.isFinite(fitScale) || fitScale <= 0) fitScale = 1f;
-                    scale = fitScale;
-                    offsetX = offsetY = 0f;
-                    invalidate();
-                } catch (Exception e) {
-                    bitmap = null;
-                    invalidate();
-                }
+                    PdfRenderer.Page page=renderer.openPage(currentPage);
+                    int targetWidth=Math.max(dp(1000),getWidth()*2);
+                    float ratio=page.getHeight()/(float)Math.max(1,page.getWidth());
+                    int targetHeight=Math.max(dp(1000),(int)(targetWidth*ratio));
+                    Bitmap b=Bitmap.createBitmap(targetWidth,targetHeight,Bitmap.Config.ARGB_8888);
+                    b.eraseColor(Color.WHITE); page.render(b,null,null,PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY); page.close();
+                    releaseBitmap(); bitmap=b; fitScale=Math.min(getWidth()/(float)b.getWidth(),getHeight()/(float)b.getHeight());
+                    if(!Float.isFinite(fitScale)||fitScale<=0) fitScale=1f; scale=fitScale; offsetX=offsetY=0f; invalidate();
+                }catch(Exception e){ bitmap=null; invalidate(); }
             });
         }
-
-        private void goToPage(int p) {
-            int next = Math.max(0, Math.min(pageCount - 1, p));
-            if (next == currentPage) return;
-            currentPage = next;
-            if (pageChanged != null) pageChanged.changed(currentPage);
-            loadPage();
-        }
-
-        private void zoomTo(float target, float focusX, float focusY) {
-            if (bitmap == null) return;
-            float old = scale;
-            float next = Math.max(fitScale, Math.min(5f, target));
-            float contentX = (focusX - pageLeft(old)) / old;
-            float contentY = (focusY - pageTop(old)) / old;
-            scale = next;
-            offsetX = focusX - contentX * scale - centeredLeft(scale);
-            offsetY = focusY - contentY * scale - centeredTop(scale);
-            clampOffsets();
-            invalidate();
-        }
-
-        private float centeredLeft(float s) { return (getWidth() - bitmap.getWidth() * s) / 2f; }
-        private float centeredTop(float s) { return (getHeight() - bitmap.getHeight() * s) / 2f; }
-        private float pageLeft(float s) { return centeredLeft(s) + offsetX; }
-        private float pageTop(float s) { return centeredTop(s) + offsetY; }
-
-        private void clampOffsets() {
-            if (bitmap == null) return;
-            float maxX = Math.max(0, (bitmap.getWidth() * scale - getWidth()) / 2f);
-            float maxY = Math.max(0, (bitmap.getHeight() * scale - getHeight()) / 2f);
-            offsetX = Math.max(-maxX, Math.min(maxX, offsetX));
-            offsetY = Math.max(-maxY, Math.min(maxY, offsetY));
-        }
-
-        @Override protected void onSizeChanged(int w, int h, int oldw, int oldh) {
-            super.onSizeChanged(w, h, oldw, oldh);
-            if (bitmap != null) {
-                fitScale = Math.min(w / (float)bitmap.getWidth(), h / (float)bitmap.getHeight());
-                if (!Float.isFinite(fitScale) || fitScale <= 0) fitScale = 1f;
-                if (scale < fitScale) scale = fitScale;
-                clampOffsets();
-            }
-        }
-
-        @Override protected void onDraw(Canvas canvas) {
-            super.onDraw(canvas);
-            if (bitmap == null) return;
-            float left = pageLeft(scale);
-            float top = pageTop(scale);
-            RectF dst = new RectF(left, top, left + bitmap.getWidth() * scale, top + bitmap.getHeight() * scale);
-            paint.setFilterBitmap(true);
-            canvas.drawBitmap(bitmap, null, dst, paint);
-        }
-
-        @Override public boolean onTouchEvent(MotionEvent event) {
-            int action = event.getActionMasked();
-            if (action == MotionEvent.ACTION_DOWN) {
-                downPage = currentPage;
-                getParent().requestDisallowInterceptTouchEvent(true);
-            }
-            boolean scaled = scaleDetector.onTouchEvent(event);
-            boolean gestured = gestureDetector.onTouchEvent(event);
-            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
-                getParent().requestDisallowInterceptTouchEvent(false);
-            }
-            return scaled || gestured || true;
-        }
-
-        void releaseBitmap() {
-            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
-            bitmap = null;
-        }
+        private void goToPage(int p) { int next=Math.max(0,Math.min(pageCount-1,p)); if(next==currentPage)return; currentPage=next; if(pageChanged!=null)pageChanged.changed(currentPage); loadPage(); }
+        private void zoomTo(float target,float focusX,float focusY){ if(bitmap==null)return; float old=scale,next=Math.max(fitScale,Math.min(5f,target)); float contentX=(focusX-pageLeft(old))/old,contentY=(focusY-pageTop(old))/old; scale=next; offsetX=focusX-contentX*scale-centeredLeft(scale); offsetY=focusY-contentY*scale-centeredTop(scale); clampOffsets(); invalidate(); }
+        private float centeredLeft(float s){return(getWidth()-bitmap.getWidth()*s)/2f;}
+        private float centeredTop(float s){return(getHeight()-bitmap.getHeight()*s)/2f;}
+        private float pageLeft(float s){return centeredLeft(s)+offsetX;}
+        private float pageTop(float s){return centeredTop(s)+offsetY;}
+        private void clampOffsets(){if(bitmap==null)return;float maxX=Math.max(0,(bitmap.getWidth()*scale-getWidth())/2f),maxY=Math.max(0,(bitmap.getHeight()*scale-getHeight())/2f);offsetX=Math.max(-maxX,Math.min(maxX,offsetX));offsetY=Math.max(-maxY,Math.min(maxY,offsetY));}
+        @Override protected void onSizeChanged(int w,int h,int ow,int oh){super.onSizeChanged(w,h,ow,oh);if(bitmap!=null){fitScale=Math.min(w/(float)bitmap.getWidth(),h/(float)bitmap.getHeight());if(!Float.isFinite(fitScale)||fitScale<=0)fitScale=1f;if(scale<fitScale)scale=fitScale;clampOffsets();}}
+        @Override protected void onDraw(Canvas canvas){super.onDraw(canvas);if(bitmap==null)return;float left=pageLeft(scale),top=pageTop(scale);RectF dst=new RectF(left,top,left+bitmap.getWidth()*scale,top+bitmap.getHeight()*scale);paint.setFilterBitmap(true);canvas.drawBitmap(bitmap,null,dst,paint);}
+        @Override public boolean onTouchEvent(MotionEvent event){int action=event.getActionMasked();if(action==MotionEvent.ACTION_DOWN)getParent().requestDisallowInterceptTouchEvent(true);boolean scaled=scaleDetector.onTouchEvent(event),gestured=gestureDetector.onTouchEvent(event);if(action==MotionEvent.ACTION_UP||action==MotionEvent.ACTION_CANCEL)getParent().requestDisallowInterceptTouchEvent(false);return scaled||gestured||true;}
+        void releaseBitmap(){if(bitmap!=null&&!bitmap.isRecycled())bitmap.recycle();bitmap=null;}
     }
 }
 `);
@@ -449,134 +320,31 @@ function findMainActivity(dir){
 const mainActivity=findMainActivity(mainJavaRoot);
 if(mainActivity){
   let t=readFileSync(mainActivity,'utf8');
-  const packageLine=(t.match(/^package\s+[^;]+;/m)||[])[0]||'';
+  if(!t.includes('import com.inthevoid.platform.PdfViewerPlugin;')) t=t.replace(/(package [^;]+;)/,'$1\n\nimport com.inthevoid.platform.PdfViewerPlugin;');
   const originalClass='public class MainActivity extends BridgeActivity {';
-  if(!t.includes('ivSystemBars')){
-    if(!t.includes('import com.inthevoid.platform.PdfViewerPlugin;')){
-      t=t.replace(/(package [^;]+;)/, '$1\n\nimport com.inthevoid.platform.PdfViewerPlugin;');
-    }
-    t=t.replace(originalClass,
-`public class MainActivity extends BridgeActivity {
+  if(t.includes(originalClass) && !t.includes('ivSystemBars')){
+    t=t.replace(originalClass,`public class MainActivity extends BridgeActivity {
     private void ivSystemBars() {
         android.view.Window w = getWindow();
         w.setStatusBarColor(android.graphics.Color.rgb(3,10,20));
         w.setNavigationBarColor(android.graphics.Color.rgb(255,248,252));
-        if (android.os.Build.VERSION.SDK_INT >= 26) {
-            w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        }
-        if (android.os.Build.VERSION.SDK_INT >= 29) {
-            w.setNavigationBarContrastEnforced(false);
-        }
-    }
-
-    @Override public void onCreate(android.os.Bundle savedInstanceState) {
-        ivSystemBars();
-        registerPlugin(PdfViewerPlugin.class);
-        super.onCreate(savedInstanceState);
-        ivSystemBars();
-    }
-
-    @Override public void onResume() {
-        super.onResume();
-        ivSystemBars();
+        if (android.os.Build.VERSION.SDK_INT >= 26) w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        if (android.os.Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);
     }`);
-    writeFileSync(mainActivity,t);
-  } else {
-    // Repair any older generated version that used protected onResume().
-    let repaired=t.replace(/@Override\s+protected\s+void\s+onResume\s*\(/g,'@Override public void onResume(');
-    if(repaired!==t) writeFileSync(mainActivity,repaired);
   }
-}
-
-const standalonePages = ['admin-manager.html','admin-videos.html','pdf-forensic-scanner.html'];
-const standaloneBackScript = `<script>
-(function ivStandaloneBack(){
-  if (!(window.Capacitor && window.Capacitor.isNativePlatform && window.Capacitor.isNativePlatform())) return;
-  try {
-    const App = window.Capacitor.Plugins && window.Capacitor.Plugins.App;
-    if (!App || !App.addListener) return;
-    let lastBackAt = 0;
-    App.addListener('backButton', function(){
-      try {
-        const visibleModal = Array.from(document.querySelectorAll('.modal,.modal-back,[role="dialog"]')).some(el => {
-          const s = getComputedStyle(el);
-          return s.display !== 'none' && s.visibility !== 'hidden' && s.opacity !== '0';
-        });
-        if (visibleModal) {
-          const close = document.querySelector('.modal.show .close, .modal-back .close, [role="dialog"] .close');
-          if (close) { close.click(); return; }
-          if (typeof window.closeModal === 'function') { window.closeModal(); return; }
-        }
-      } catch (_) {}
-      if (window.history && window.history.length > 1) {
-        window.history.back();
-        return;
-      }
-      const now = Date.now();
-      if (now - lastBackAt < 2200) {
-        if (App.exitApp) App.exitApp();
-        else if (App.minimizeApp) App.minimizeApp();
-        return;
-      }
-      lastBackAt = now;
-      const toast = document.createElement('div');
-      toast.textContent = 'اضغط مرة أخرى للخروج من التطبيق';
-      toast.style.cssText = 'position:fixed;left:50%;bottom:28px;transform:translateX(-50%);z-index:2147483647;background:rgba(15,23,42,.94);color:#fff;padding:11px 16px;border-radius:12px;font:800 13px Cairo,system-ui,sans-serif;box-shadow:0 10px 30px rgba(0,0,0,.25);';
-      document.body.appendChild(toast);
-      setTimeout(() => toast.remove(), 1800);
-    });
-  } catch (_) {}
-})();
-</script>`;
-for (const page of standalonePages) {
-  const pagePath = join(root, page);
-  if (existsSync(pagePath)) {
-    let html = readFileSync(pagePath, 'utf8');
-    if (!html.includes('ivStandaloneBack')) {
-      html = html.includes('</body>') ? html.replace('</body>', standaloneBackScript + '\n</body>') : html + standaloneBackScript;
-      writeFileSync(pagePath, html);
-    }
+  if(!t.includes('registerPlugin(PdfViewerPlugin.class)')){
+    t=t.replace(/(super\.onCreate\(savedInstanceState\);)/,'$1\n        registerPlugin(PdfViewerPlugin.class);\n        ivSystemBars();');
   }
-}
-
-// Keep the Android launch window neutral. Android 12+ may still show the platform-mandated
-// system splash; this project does not request the Capacitor SplashScreen plugin.
-const ivNavigationColor = '@color/iv_navigation_bar';
-const ivColorsPath = join(res, 'values', 'colors.xml');
-mkdirSync(join(res, 'values'), { recursive: true });
-let ivColors = existsSync(ivColorsPath) ? readFileSync(ivColorsPath,'utf8') : '<resources>\n</resources>\n';
-if (!ivColors.includes('iv_navigation_bar')) {
-  ivColors = ivColors.replace('</resources>', '    <color name="iv_navigation_bar">#FFF8FC</color>\n</resources>');
-  writeFileSync(ivColorsPath, ivColors);
-}
-function patchStyleFiles(dir) {
-  if (!existsSync(dir)) return;
-  for (const entry of readdirSync(dir,{withFileTypes:true})) {
-    const path = join(dir,entry.name);
-    if (entry.isDirectory()) { patchStyleFiles(path); continue; }
-    if (entry.name !== 'styles.xml') continue;
-    let styles = readFileSync(path,'utf8');
-    styles = styles.replace(/<item name="android:windowSplashScreenAnimatedIcon">[^<]*<\/item>\s*/g, '');
-    styles = styles.replace(/<item name="windowSplashScreenAnimatedIcon">[^<]*<\/item>\s*/g, '');
-    styles = styles.replace(/<item name="android:navigationBarColor">[^<]*<\/item>\s*/g, '');
-    styles = styles.replace(/<item name="android:windowLightNavigationBar">[^<]*<\/item>\s*/g, '');
-    styles = styles.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/g, (full, open, body, close) => {
-      if (!body.includes('android:navigationBarColor')) body = '\n        <item name="android:navigationBarColor">' + ivNavigationColor + '</item>' + body;
-      if (!body.includes('android:windowLightNavigationBar')) body = '\n        <item name="android:windowLightNavigationBar">true</item>' + body;
-      return open + body + close;
-    });
-    writeFileSync(path,styles);
+  if(t.includes('protected void onResume()')) t=t.replace('protected void onResume()','public void onResume()');
+  if(!t.includes('public void onResume()')){
+    t=t.replace(/\n\}/s,'\n    @Override public void onResume() {\n        super.onResume();\n        ivSystemBars();\n    }\n}\n');
   }
-}
-patchStyleFiles(res);
-
-const manifestPath=join(app,'src','main','AndroidManifest.xml');
-if(existsSync(manifestPath)){
-  let t=readFileSync(manifestPath,'utf8');
-  const providerManifest = `\n        <provider android:name="androidx.core.content.FileProvider" android:authorities="${'${applicationId}'}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>`;
-  if(!t.includes('androidx.core.content.FileProvider')) t=t.replace('</application>', providerManifest+'\n    </application>');
-  if(!t.includes('PdfViewerActivity')) t=t.replace('</application>', '        <activity android:name=".PdfViewerActivity" android:exported="false" android:screenOrientation="portrait" />\n    </application>');
-  writeFileSync(manifestPath,t);
+  writeFileSync(mainActivity,t);
 }
 
-console.log(`Prepared Android: com.inthevoid.platform versionCode=${versionCode} versionName=${versionName}`);
+const manifest = join(app, 'src', 'main', 'AndroidManifest.xml');
+if(existsSync(manifest)){
+  let m=readFileSync(manifest,'utf8');
+  if(!m.includes('PdfViewerActivity')) m=m.replace('</application>',`<activity android:name=".PdfViewerActivity" android:screenOrientation="portrait" android:exported="false" />\n    <provider android:name="androidx.core.content.FileProvider" android:authorities="${'${applicationId}'}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>\n</application>`);
+  writeFileSync(manifest,m);
+}
