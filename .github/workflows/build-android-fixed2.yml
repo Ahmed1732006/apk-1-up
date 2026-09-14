@@ -20,6 +20,8 @@ jobs:
         run: test -s google-services.json
       - name: Prepare web bundle (offline-capable)
         run: npm run build:web
+      - name: Patch web runtime (online-first + native PDF)
+        run: node scripts/patch-web-runtime.mjs
       - name: Add Android project
         run: npx cap add android
       - name: Generate launcher and splash assets
@@ -34,6 +36,8 @@ jobs:
           echo "ANDROID_VERSION_NAME=1.2.1" >> "$GITHUB_ENV"
       - name: Apply IN THE VOID Android fixes
         run: node scripts/prepare-android.mjs
+      - name: Apply native PDF URL bridge
+        run: node scripts/patch-pdf-plugin-url.mjs
       - name: Apply deterministic vertical PDF viewer
         run: node scripts/patch-pdf-viewer-fixed.mjs
       - name: Apply PDF cleanup compatibility
@@ -41,14 +45,22 @@ jobs:
       - name: Patch Capacitor MainActivity
         run: node scripts/patch-main-activity.mjs
       - name: Validate patch scripts
-        run: node --check scripts/prepare-android.mjs && node --check scripts/patch-pdf-viewer-fixed.mjs && node --check scripts/fix-pdf-release-method.mjs && node --check scripts/patch-main-activity.mjs
+        run: |
+          node --check scripts/prepare-android.mjs
+          node --check scripts/patch-web-runtime.mjs
+          node --check scripts/patch-pdf-plugin-url.mjs
+          node --check scripts/patch-pdf-viewer-fixed.mjs
+          node --check scripts/fix-pdf-release-method.mjs
+          node --check scripts/patch-main-activity.mjs
       - name: Preflight generated Android sources
         shell: bash
         run: |
           set -euo pipefail
           PDF_JAVA="android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity.java"
+          PLUGIN_JAVA="android/app/src/main/java/com/inthevoid/platform/PdfViewerPlugin.java"
           MAIN_JAVA="android/app/src/main/java/com/inthevoid/platform/MainActivity.java"
           test -s "$PDF_JAVA"
+          test -s "$PLUGIN_JAVA"
           test -s "android/app/src/main/AndroidManifest.xml"
           test -s "$MAIN_JAVA"
           grep -Fq 'public class PdfViewerActivity extends Activity' "$PDF_JAVA"
@@ -59,9 +71,14 @@ jobs:
           grep -Fq 'FileProvider' android/app/src/main/AndroidManifest.xml
           grep -Fq 'PdfViewerPlugin' "$MAIN_JAVA"
           grep -Fq 'registerPlugin' "$MAIN_JAVA"
+          grep -Fq 'public void openUrl(PluginCall call)' "$PLUGIN_JAVA"
+          grep -Fq 'HttpURLConnection' "$PLUGIN_JAVA"
+          grep -Fq 'ivSystemBars' "$MAIN_JAVA"
+          grep -Fq 'onWindowFocusChanged' "$MAIN_JAVA"
           ! grep -Fq 'private class PdfPageView extends View' "$PDF_JAVA"
           ! grep -Fq 'onFling(' "$PDF_JAVA"
           ! grep -Fq 'goToPage(' "$PDF_JAVA"
+          grep -Fq 'iv-native-pdf-runtime' www/app/index.html
       - name: Sync Capacitor
         run: npx cap sync android
       - name: Setup Java
