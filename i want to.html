@@ -1,0 +1,1377 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+    <!-- MIDAD PWA: cross-browser home-screen support -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="1.png">
+    <link rel="apple-touch-icon" href="1.png">
+    <meta name="application-name" content="سر">
+    <meta name="apple-mobile-web-app-title" content="سر">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <!-- /MIDAD PWA -->
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,maximum-scale=1.0,user-scalable=yes">
+<title>مكتبة فيديوهات الترحيب — MIDAD</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+:root{--primary:#7EC1E8;--primary-light:#C7E7F7;--primary-dark:#3E8FC4;--primary-bg:#F1FAFF;--gold:#A9B9CC;--gold-light:#D6E1EC;--gold-bg:#F4F8FB;--purple:#3E6E96;--purple-light:#86AECB;--purple-bg:#EAF3FA;--bg:#F7FCFF;--surface:#fff;--surface-alt:#EEF8FE;--border:#D6ECF8;--text:#0F2A3D;--text-secondary:#3E6480;--text-muted:#90B4CB;--danger:#C6493F;--success:#1E8A5C;--warning:#AD7A21;--shadow-sm:0 2px 10px rgba(62,143,196,.08);--shadow:0 8px 26px rgba(62,143,196,.10);--shadow-md:0 16px 42px rgba(62,143,196,.13);--shadow-lg:0 30px 80px rgba(62,143,196,.18);--radius:18px;--radius-sm:12px;--transition:.3s cubic-bezier(.22,1,.36,1)}
+html{scroll-behavior:smooth;overflow-x:hidden}body{font-family:'Cairo',sans-serif;background:radial-gradient(1100px 480px at 88% -10%,rgba(62,110,150,.08),transparent 60%),radial-gradient(900px 420px at 8% 0%,rgba(126,193,232,.11),transparent 55%),var(--bg);color:var(--text);min-height:100vh;-webkit-font-smoothing:antialiased}button,input{font:inherit}
+button{border:0;cursor:pointer}.wrap{max-width:1220px;margin:auto;padding:0 22px 52px;width:100%}
+.header{position:sticky;top:0;z-index:50;background:rgba(255,255,255,.78);backdrop-filter:blur(18px) saturate(160%);border-bottom:1px solid rgba(23,27,43,.07);box-shadow:0 10px 30px -18px rgba(23,27,43,.25);padding:0 22px;height:68px;display:flex;align-items:center;justify-content:space-between;margin:0 -22px 26px;width:calc(100% + 44px);position:relative}.header:after{content:'';position:absolute;left:0;right:0;bottom:-1px;height:1px;background:linear-gradient(90deg,transparent,var(--gold-light),var(--purple-light),transparent)}
+.header-brand{display:flex;align-items:center;gap:10px;font-weight:900;font-size:1.2rem}.brand-icon{width:42px;height:42px;border-radius:13px;display:grid;place-items:center;background:var(--primary-bg);border:1px solid var(--border);color:var(--primary-dark);box-shadow:var(--shadow-sm)}.brand-text small{display:block;color:var(--text-muted);font-size:.65rem;font-weight:700;margin-top:-2px}.header-actions{display:flex;align-items:center;gap:8px}.header-btn,.fileBtn{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:40px;padding:8px 13px;border-radius:13px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-weight:800;box-shadow:var(--shadow-sm);transition:all var(--transition)}.header-btn:hover,.fileBtn:hover{transform:translateY(-2px);border-color:var(--primary-light);box-shadow:var(--shadow)}.primary{background:linear-gradient(135deg,#3E8FC4,#7EC1E8)!important;color:#fff!important;border-color:transparent!important}.danger{background:#FBEBE9!important;color:var(--danger)!important;border:1px solid #F1CCC8!important}.success{background:#E8F7EF!important;color:var(--success)!important;border:1px solid #C7E9D7!important}.gray{background:var(--surface)!important;color:var(--text-secondary)!important}.fileBtn input{display:none}
+.page-head{display:flex;align-items:flex-end;justify-content:space-between;gap:18px;margin-bottom:20px}.page-title h1{font-size:1.55rem;font-weight:900}.page-title p{color:var(--text-secondary);font-size:.84rem;margin-top:5px}.page-badge{display:inline-flex;align-items:center;gap:7px;padding:8px 12px;border-radius:999px;background:var(--primary-bg);border:1px solid var(--primary-light);color:var(--primary-dark);font-size:.72rem;font-weight:900}
+.stats{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-bottom:18px}.statCard{background:var(--surface);border:1px solid var(--border);border-radius:18px;padding:17px 18px;box-shadow:var(--shadow-sm);position:relative;overflow:hidden}.statCard:before{content:'';position:absolute;top:0;right:0;left:0;height:3px;background:linear-gradient(90deg,var(--purple-light),var(--primary-light))}.statCard span{display:block;color:var(--text-secondary);font-size:.75rem;font-weight:700}.statCard strong{display:block;font-family:'Outfit',sans-serif;font-size:1.9rem;color:var(--text);margin-top:5px}
+.panel{background:rgba(255,255,255,.9);border:1px solid var(--border);border-radius:22px;padding:19px;box-shadow:var(--shadow-sm);margin-bottom:18px}.uploadPanel{background:linear-gradient(135deg,var(--primary-bg),#fff 60%)}.uploadTop{display:flex;align-items:center;justify-content:space-between;gap:15px}.uploadTop b{font-size:1rem}.muted{color:var(--text-muted);font-size:.78rem;margin-top:5px}.status{display:none;padding:11px 14px;border-radius:13px;margin-top:12px;font-size:.8rem;font-weight:700}.status.show{display:block;background:var(--info-bg,#EAF2FA);color:var(--text-secondary)}.status.ok{background:#E8F7EF;color:var(--success)}.status.error{background:#FBEBE9;color:var(--danger)}.uploadProgress{height:5px;background:var(--border);border-radius:99px;overflow:hidden;margin-top:14px;display:none}.uploadProgress span{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--purple),var(--primary));transition:width .2s}
+.section-title{display:flex;align-items:center;gap:8px;font-size:.95rem;font-weight:900}.section-title i{color:var(--primary-dark)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(290px,1fr));gap:17px}.card{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:20px;overflow:hidden;box-shadow:var(--shadow-sm);transition:all var(--transition)}.card:hover{transform:translateY(-5px);box-shadow:var(--shadow-md);border-color:var(--primary-light)}.thumb{height:185px;background:var(--surface-alt);position:relative;overflow:hidden}.thumb video{width:100%;height:100%;object-fit:cover;display:block}.thumb:after{content:'';position:absolute;inset:0;background:linear-gradient(180deg,transparent 50%,rgba(15,42,61,.5));pointer-events:none}.thumbPlay{position:absolute;inset:0;display:grid;place-items:center;z-index:2;pointer-events:none}.thumbPlay span{width:55px;height:55px;border-radius:50%;background:rgba(255,255,255,.93);color:var(--primary-dark);display:grid;place-items:center;font-size:20px;box-shadow:0 10px 25px rgba(15,42,61,.16)}.body{padding:15px}.name{font-weight:900;font-size:.92rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;direction:ltr;text-align:left;color:var(--text)}.card-meta{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-top:6px}.size{font-size:.7rem;color:var(--text-muted)}.cardBtns{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}.cardBtns button,.body>button{padding:10px 12px;border-radius:12px;font-size:.76rem;font-weight:900;transition:all var(--transition)}.cardBtns button:hover,.body>button:hover{transform:translateY(-1px)}
+.assignment{margin-top:14px;padding-top:14px;border-top:1px solid var(--border)}.assignmentTitle{font-weight:900;font-size:.82rem;margin-bottom:8px}.statusBox{background:var(--surface-alt);border:1px solid var(--border-light,#ECF7FD);border-radius:13px;padding:9px;margin-top:8px}.statusHead{display:flex;justify-content:space-between;margin-bottom:6px;font-size:.72rem;font-weight:900}.pendingHead{color:var(--warning)}.seenHead{color:var(--success)}.userRow{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:8px;border-radius:10px;background:#fff;border:1px solid var(--border);margin-top:5px}.userName{font-size:.72rem;font-weight:800}.userEmail{font-size:.63rem;color:var(--text-muted);overflow:hidden;text-overflow:ellipsis}.xBtn{width:28px;height:28px;padding:0;border-radius:9px;background:#FBEBE9;color:var(--danger);border:1px solid #F1CCC8;flex:none}.empty{padding:50px 20px;text-align:center;color:var(--text-muted);border:1px dashed var(--border);border-radius:20px;background:rgba(255,255,255,.55)}
+.login{max-width:440px;margin:12vh auto;padding:30px;background:rgba(255,255,255,.92);border:1px solid var(--border);border-radius:26px;box-shadow:var(--shadow-lg);text-align:center}.login h2{font-size:1.35rem}.login p{margin-bottom:18px}.login input{width:100%;padding:12px 14px;margin:5px 0;border-radius:12px;border:1px solid var(--border);background:#fff;color:var(--text);outline:none}.login input:focus,.memberSearch:focus{border-color:var(--primary);box-shadow:0 0 0 4px rgba(126,193,232,.15)}.login #loginBtn{width:100%;margin-top:8px;padding:12px;border-radius:12px;font-weight:900}
+.modal{position:fixed;inset:0;background:rgba(17,21,35,.55);backdrop-filter:blur(7px);display:none;align-items:center;justify-content:center;padding:14px;z-index:1000}.modal.show{display:flex}.dialog{width:min(950px,100%);max-height:92vh;overflow:auto;background:var(--surface);border:1px solid var(--border);border-radius:24px;box-shadow:var(--shadow-lg);animation:scaleIn .3s ease}.dialogHead{padding:15px 18px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;gap:10px}.dialogHead strong{font-size:.9rem}.dialogBody{padding:17px}.dialog video{width:100%;max-height:75vh;background:#07131c;display:block;border-radius:15px}.close{background:var(--surface-alt)!important;color:var(--text-secondary)!important;border:1px solid var(--border)!important;padding:8px 12px!important;border-radius:10px!important}.memberSearch{width:100%;background:#fff;border:1px solid var(--border);color:var(--text);padding:12px;border-radius:12px;margin-bottom:10px;direction:rtl;outline:none}.memberList{max-height:420px;overflow:auto;display:grid;gap:7px}.member{display:flex;align-items:center;gap:10px;padding:11px;border-radius:12px;background:var(--surface-alt);border:1px solid transparent;cursor:pointer;transition:.2s}.member:hover{border-color:var(--primary-light);background:var(--primary-bg)}.member input{width:18px;height:18px;accent-color:var(--primary-dark)}.memberText{min-width:0}.memberText strong{display:block;font-size:.8rem}.memberText small{color:var(--text-muted);font-size:.68rem}.actions{display:flex;gap:9px;flex-wrap:wrap}.actions button{padding:10px 13px;border-radius:12px;font-weight:900}
+@keyframes scaleIn{from{opacity:0;transform:scale(.96) translateY(6px)}to{opacity:1;transform:scale(1) translateY(0)}}
+@media(max-width:700px){.wrap{padding:0 12px 35px}.header{margin:0 -12px 18px;width:calc(100% + 24px);height:58px;padding:0 12px}.header-brand{font-size:1rem}.brand-icon{width:36px;height:36px}.header-btn{width:38px;padding:8px;font-size:0}.header-btn i{font-size:.8rem}.page-head{align-items:flex-start;flex-direction:column}.stats{grid-template-columns:1fr}.uploadTop{flex-direction:column;align-items:stretch}.grid{grid-template-columns:1fr}.thumb{height:205px}.modal{padding:8px}.dialog{max-height:96vh}.dialogBody{padding:12px}}
+</style>
+
+
+
+<style id="library-themes">
+/* ===== MIDAD VIDEO LIBRARY — lightweight multi-theme engine ===== */
+:root{--theme-speed:1}
+body{transition:background .35s ease,color .25s ease}
+.theme-switcher{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin:0 0 18px;padding:8px;border:1px solid var(--border);background:rgba(255,255,255,.72);backdrop-filter:blur(12px);border-radius:16px;box-shadow:var(--shadow-sm)}
+.theme-switcher-label{font-size:.72rem;font-weight:900;color:var(--text-secondary);padding:0 5px;white-space:nowrap}
+.theme-btn{position:relative;display:inline-flex;align-items:center;gap:7px;padding:8px 11px;border-radius:12px;border:1px solid var(--border);background:var(--surface);color:var(--text-secondary);font-size:.7rem;font-weight:900;transition:.28s cubic-bezier(.22,1,.36,1);overflow:hidden}
+.theme-btn:hover{transform:translateY(-2px);box-shadow:var(--shadow)}
+.theme-btn.active{border-color:var(--primary-light);color:var(--primary-dark);box-shadow:0 7px 18px rgba(0,0,0,.08);transform:translateY(-1px)}
+.theme-dot{width:13px;height:13px;border-radius:50%;display:inline-block;box-shadow:inset 0 0 0 1px #fff8,0 2px 5px #0002}
+.theme-baby .theme-dot{background:linear-gradient(135deg,#7DD3FC,#5EEAD4)}
+.theme-forest .theme-dot{background:linear-gradient(135deg,#3FA66B,#D4A72C)}
+.theme-slate .theme-dot{background:linear-gradient(135deg,#3B4A5A,#D98A2B)}
+.theme-creative .theme-dot{background:linear-gradient(135deg,#6366F1,#EC4899)}
+.theme-stage{position:fixed;inset:0;pointer-events:none;z-index:1;overflow:hidden}
+.theme-particle{position:absolute;pointer-events:none;will-change:transform,opacity}
+/* BABY BLUE — bubbles, clouds and soft shimmer */
+body.theme-baby{--primary:#7DD3FC;--primary-light:#BAE6FD;--primary-dark:#0284C7;--primary-bg:#F0F9FF;--gold:#C4B5FD;--gold-light:#E0D7FF;--purple:#5EEAD4;--purple-light:#99F6E4;--bg:#F6FBFF;--surface:#fff;--surface-alt:#EEF8FF;--border:#DCEEFB;--border-light:#EEF8FF;--text:#1E3A5F;--text-secondary:#5B7A93;--text-muted:#9FBDD1;--shadow-sm:0 3px 12px rgba(56,189,248,.08);--shadow:0 10px 28px rgba(56,189,248,.10);--shadow-md:0 18px 42px rgba(56,189,248,.15)}
+body.theme-baby{background:radial-gradient(700px 420px at 15% 0%,rgba(125,211,252,.16),transparent 60%),radial-gradient(650px 400px at 90% 15%,rgba(196,181,253,.12),transparent 58%),radial-gradient(600px 360px at 50% 100%,rgba(94,234,212,.10),transparent 65%),var(--bg)}
+body.theme-baby .card:hover{border-color:#BAE6FD;box-shadow:0 20px 44px rgba(56,189,248,.16)}
+body.theme-baby .card:after{content:"";position:absolute;inset:0;pointer-events:none;background:linear-gradient(120deg,transparent 20%,rgba(255,255,255,.5) 48%,transparent 62%);transform:translateX(130%);transition:transform .8s ease}
+body.theme-baby .card:hover:after{transform:translateX(-130%)}
+body.theme-baby .primary{background:linear-gradient(135deg,#7DD3FC,#5EEAD4)!important;color:#0C2A43!important}
+body.theme-baby .theme-switcher{border-color:#DCEEFB;background:rgba(255,255,255,.72)}
+.bubble{width:18px;height:18px;border-radius:50%;background:radial-gradient(circle at 30% 25%,#fff,rgba(186,230,253,.3) 55%,transparent 72%);border:1px solid rgba(125,211,252,.4);animation:bubbleRise 12s ease-in-out infinite}
+.cloud{width:90px;height:28px;border-radius:30px;background:rgba(255,255,255,.62);filter:blur(1px);box-shadow:25px -8px 0 -2px rgba(255,255,255,.5),55px 1px 0 -6px rgba(255,255,255,.5);animation:cloudDrift 25s ease-in-out infinite}
+.twinkle{font-size:15px;color:#38BDF8;animation:twinkle 6s ease-in-out infinite}
+@keyframes bubbleRise{0%{transform:translateY(30px) scale(.7);opacity:0}15%{opacity:.7}85%{opacity:.7}100%{transform:translateY(-120px) scale(1.1);opacity:0}}
+@keyframes cloudDrift{0%,100%{transform:translateX(0)}50%{transform:translateX(38px) translateY(-8px)}}
+@keyframes twinkle{0%,100%{opacity:.18;transform:scale(.8) rotate(0)}50%{opacity:.85;transform:scale(1.2) rotate(25deg)}}
+/* FOREST — drifting leaves + fireflies + organic cards */
+body.theme-forest{--primary:#3FA66B;--primary-light:#8FD9AE;--primary-dark:#237A4A;--primary-bg:#EFFBF3;--gold:#D4A72C;--gold-light:#F0D98C;--purple:#B8763D;--purple-light:#E0BE96;--bg:#F7FBF5;--surface:#fff;--surface-alt:#EFF7F1;--border:#DCEEDF;--border-light:#EEF6EF;--text:#16301F;--text-secondary:#4A6B54;--text-muted:#8DAA96;--shadow-sm:0 3px 12px rgba(35,122,74,.08);--shadow:0 10px 28px rgba(35,122,74,.10);--shadow-md:0 20px 46px rgba(35,122,74,.15)}
+body.theme-forest{background:radial-gradient(700px 450px at 10% 0%,rgba(63,166,107,.14),transparent 62%),radial-gradient(650px 420px at 90% 25%,rgba(212,167,44,.09),transparent 62%),var(--bg)}
+body.theme-forest .card{border-radius:22px 14px 22px 14px}
+body.theme-forest .card:hover{transform:translateY(-7px) rotate(-.25deg);box-shadow:0 22px 46px rgba(35,122,74,.17);border-color:#8FD9AE}
+body.theme-forest .statCard:before{background:linear-gradient(90deg,#3FA66B,#D4A72C)}
+body.theme-forest .primary{background:linear-gradient(135deg,#237A4A,#3FA66B)!important}
+body.theme-forest .forest-leaf{width:15px;height:9px;border-radius:100% 0 100% 0;background:linear-gradient(135deg,#8FD9AE,#237A4A);box-shadow:0 2px 8px rgba(35,122,74,.16);animation:leafFall 11s linear infinite}
+body.theme-forest .firefly{width:5px;height:5px;border-radius:50%;background:#D4A72C;box-shadow:0 0 14px 4px rgba(212,167,44,.45);animation:firefly 5s ease-in-out infinite}
+@keyframes leafFall{0%{transform:translate3d(0,-8vh,0) rotate(0);opacity:0}10%{opacity:.9}50%{transform:translate3d(55px,52vh,0) rotate(190deg)}100%{transform:translate3d(-60px,112vh,0) rotate(390deg);opacity:0}}
+@keyframes firefly{0%,100%{transform:translate(0,0) scale(.6);opacity:.15}50%{transform:translate(15px,-20px) scale(1.4);opacity:1}}
+/* POLISHED GRAY + AMBER — premium metal, diagonal sheen and warm accents */
+body.theme-slate{--primary:#3B4A5A;--primary-light:#7A8A9A;--primary-dark:#25313D;--primary-bg:#EEF1F4;--gold:#D98A2B;--gold-light:#F0B368;--gold-bg:#FCEEDC;--purple:#2E8B8B;--purple-light:#6FBFBF;--bg:#FAFAF9;--surface:#fff;--surface-alt:#F1F2F3;--border:#E4E6E9;--border-light:#ECEDEF;--text:#1C2126;--text-secondary:#5B6470;--text-muted:#9AA3AD;--shadow-sm:0 2px 8px rgba(28,33,38,.05);--shadow:0 8px 22px rgba(28,33,38,.07);--shadow-md:0 16px 38px rgba(28,33,38,.10)}
+body.theme-slate{background:radial-gradient(700px 400px at 85% -5%,rgba(217,138,43,.10),transparent 60%),radial-gradient(650px 380px at 8% 12%,rgba(46,139,139,.07),transparent 62%),var(--bg)}
+body.theme-slate .header{background:rgba(255,255,255,.88)!important}
+body.theme-slate .card{border-radius:16px;box-shadow:0 5px 18px rgba(28,33,38,.06)}
+body.theme-slate .card:hover{transform:translateY(-5px);box-shadow:0 20px 42px rgba(28,33,38,.12);border-color:#F0B368}
+body.theme-slate .card:before{background:linear-gradient(115deg,transparent 25%,rgba(255,255,255,.75) 48%,transparent 65%);transition:left .9s ease}
+body.theme-slate .primary{background:linear-gradient(135deg,#25313D,#3B4A5A)!important}
+body.theme-slate .fileBtn.primary{background:linear-gradient(135deg,#D98A2B,#F0B368)!important;color:#25180C!important}
+body.theme-slate .amber-line{height:3px;border-radius:99px;background:linear-gradient(90deg,transparent,#D98A2B,#F0B368,#D98A2B,transparent);animation:amberSweep 4s linear infinite;background-size:220% 100%}
+body.theme-slate .metal-chip{width:22px;height:22px;border-radius:7px;background:linear-gradient(145deg,#fff,#7A8A9A,#fff);border:1px solid #CBD0D5;box-shadow:inset 0 1px #fff,0 3px 7px #0001;animation:metalFloat 6s ease-in-out infinite}
+@keyframes amberSweep{0%{background-position:0}100%{background-position:220%}}
+@keyframes metalFloat{0%,100%{transform:translateY(0) rotate(0)}50%{transform:translateY(-8px) rotate(8deg)}}
+/* CREATIVE — SaaS geometry, gradient blobs, orbit dots */
+body.theme-creative{--primary:#6366F1;--primary-light:#A5B4FC;--primary-dark:#4F46E5;--primary-bg:#EEF2FF;--gold:#F97316;--gold-light:#FDBA74;--purple:#EC4899;--purple-light:#F9A8D4;--bg:#F8FAFC;--surface:#fff;--surface-alt:#F1F5F9;--border:#E2E8F0;--border-light:#F1F5F9;--text:#0F172A;--text-secondary:#475569;--text-muted:#94A3B8;--shadow-sm:0 2px 8px rgba(99,102,241,.06);--shadow:0 12px 32px rgba(99,102,241,.10);--shadow-md:0 20px 50px rgba(99,102,241,.14)}
+body.theme-creative{background:radial-gradient(650px 420px at 8% 0%,rgba(99,102,241,.13),transparent 62%),radial-gradient(620px 400px at 92% 12%,rgba(236,72,153,.10),transparent 62%),radial-gradient(520px 340px at 50% 100%,rgba(20,184,166,.08),transparent 65%),var(--bg)}
+body.theme-creative .card{border-radius:20px}
+body.theme-creative .card:hover{transform:translateY(-8px) scale(1.008);box-shadow:0 24px 55px rgba(99,102,241,.17);border-color:#C7D2FE}
+body.theme-creative .statCard:nth-child(1):before{background:#6366F1}.theme-creative .statCard:nth-child(2):before{background:#14B8A6}.theme-creative .statCard:nth-child(3):before{background:#F97316}
+body.theme-creative .primary{background:linear-gradient(135deg,#6366F1,#8B5CF6)!important}
+body.theme-creative .page-title h1:after{content:"";display:block;width:82px;height:5px;margin-top:8px;border-radius:99px;background:linear-gradient(90deg,#6366F1,#EC4899,#14B8A6);background-size:220% 100%;animation:creativeShine 4s linear infinite}
+body.theme-creative .creative-orb{border-radius:50%;border:1px solid rgba(99,102,241,.12);animation:orbFloat 9s ease-in-out infinite}
+body.theme-creative .creative-dot{width:6px;height:6px;border-radius:50%;background:#EC4899;box-shadow:0 0 14px 3px rgba(236,72,153,.25);animation:dotPulse 4s ease-in-out infinite}
+@keyframes creativeShine{0%{background-position:0}100%{background-position:220%}}
+@keyframes orbFloat{0%,100%{transform:translateY(0) rotate(0);opacity:.3}50%{transform:translateY(-24px) rotate(35deg);opacity:.65}}
+@keyframes dotPulse{0%,100%{transform:scale(.6);opacity:.2}50%{transform:scale(1.45);opacity:1}}
+@media(max-width:700px){.theme-switcher{padding:7px;gap:6px}.theme-switcher-label{width:100%;padding-bottom:2px}.theme-btn{flex:1;justify-content:center;font-size:.66rem;padding:8px 7px}.theme-btn span:last-child{display:none}}
+@media(prefers-reduced-motion:reduce){.theme-particle,*{animation-duration:.01ms!important;animation-iteration-count:1!important;transition:none!important}}
+</style>
+</head>
+<body>
+
+
+<div id="loginView" class="login" style="display:none">
+  <div class="brand-icon" style="margin:0 auto 12px"><i class="fa-solid fa-lock"></i></div>
+  <h2>تسجيل دخول الإدارة</h2>
+  <p class="muted">ادخل بحساب الأدمن المرتبط بنفس Supabase.</p>
+  <input id="email" type="email" placeholder="البريد الإلكتروني">
+  <input id="password" type="password" placeholder="كلمة المرور">
+  <button id="loginBtn" class="primary">تسجيل الدخول</button>
+  <div id="loginStatus" class="status"></div>
+</div>
+<div id="app" style="display:none">
+  <div class="wrap">
+    <header class="header">
+      <div class="header-brand"><div class="brand-icon"><i class="fa-solid fa-film"></i></div><div class="brand-text">مكتبة الفيديوهات<small>إدارة فيديوهات الترحيب</small></div></div>
+      <div class="header-actions">
+        <label class="fileBtn primary" title="اختيار فيديو"><i class="fa-solid fa-cloud-arrow-up"></i><span>إضافة فيديو</span><input id="fileInput" type="file" accept="video/*"></label>
+        <button id="refreshBtn" class="header-btn" title="تحديث"><i class="fa-solid fa-rotate"></i><span>تحديث</span></button>
+        <button id="logoutBtn" class="header-btn danger" title="تسجيل الخروج"><i class="fa-solid fa-right-from-bracket"></i><span>خروج</span></button>
+      </div>
+    </header>
+    <div class="theme-switcher" id="themeSwitcher" aria-label="اختيار شكل الموقع">
+      <span class="theme-switcher-label">🎨 شكل الموقع</span>
+      <button class="theme-btn theme-baby" data-theme="baby"><i class="fa-solid fa-snowflake"></i><span>بيبي بلو ثلجي</span><b class="theme-dot"></b></button>
+      <button class="theme-btn theme-forest" data-theme="forest"><i class="fa-solid fa-leaf"></i><span>الغابة الساحرة</span><b class="theme-dot"></b></button>
+      <button class="theme-btn theme-slate" data-theme="slate"><i class="fa-solid fa-layer-group"></i><span>الرمادي المصقول والكهرماني</span><b class="theme-dot"></b></button>
+      <button class="theme-btn theme-creative" data-theme="creative"><i class="fa-solid fa-wand-magic-sparkles"></i><span>التصميم الإبداعي</span><b class="theme-dot"></b></button>
+    </div>
+    <div class="page-head"><div class="page-title"><h1>فيديوهات الترحيب</h1><p>إدارة مكتبة الفيديو وتحديد الأعضاء الذين سيشاهدون كل فيديو.</p></div><div class="page-badge"><i class="fa-solid fa-cloud"></i> مرتبطة بالموقع الأساسي</div></div>
+    <section class="stats" id="stats">
+      <div class="statCard"><span>🎬 إجمالي الفيديوهات</span><strong id="videoCount">0</strong></div>
+      <div class="statCard"><span>👥 إجمالي التوزيعات</span><strong id="assignmentCount">0</strong></div>
+      <div class="statCard"><span>🟢 شاهدوا وأغلقوا</span><strong id="seenCount">0</strong></div>
+    </section>
+    <section class="panel uploadPanel">
+      <div class="uploadTop"><div><b>⬆️ إضافة فيديو جديد</b><div id="selectedFileText" class="muted">لم يتم اختيار فيديو. الاختيار وحده لا يرفع أي شيء.</div></div><button id="uploadSaveBtn" class="primary" disabled>💾 حفظ ورفع الفيديو</button></div>
+      <div id="uploadProgress" class="uploadProgress"><span></span></div>
+    </section>
+    <section class="panel"><div class="section-title"><i class="fa-solid fa-circle-info"></i> طريقة التوزيع</div><div class="muted">اختر أي فيديو ثم حدد له أي عدد من الأعضاء. كل فيديو له أعضاء مستقلون عن باقي الفيديوهات.</div><div id="status" class="status"></div></section>
+    <div id="grid" class="grid"></div>
+  </div>
+</div>
+<div id="previewModal" class="modal"><div class="dialog"><div class="dialogHead"><strong id="previewTitle">معاينة الفيديو</strong><button id="closePreview" class="close">✕</button></div><div class="dialogBody"><video id="previewPlayer" controls playsinline preload="auto"></video></div></div></div>
+<div id="membersModal" class="modal"><div class="dialog"><div class="dialogHead"><strong id="membersTitle">اختيار الأعضاء</strong><button id="closeMembers" class="close">✕</button></div><div class="dialogBody"><input id="memberSearch" class="memberSearch" placeholder="ابحث بالاسم أو البريد..."><div id="selectedCount" class="muted">0 عضو محدد</div><div id="memberList" class="memberList"></div><div class="actions" style="margin-top:15px"><button id="saveMembers" class="primary">💾 حفظ توزيع الفيديو</button><button id="cancelMembers" class="gray">إلغاء</button></div></div></div></div>
+<script>
+
+const SUPABASE_URL =
+  'https://clobfjrjhdysmqhbwzlc.supabase.co';
+
+const SUPABASE_KEY =
+  'sb_publishable_LEFYVl0Y8VOnMIbBZev1Vg_0pYSMWpv';
+
+const sb =
+  window.supabase.createClient(
+    SUPABASE_URL,
+    SUPABASE_KEY
+  );
+
+const BUCKET = 'welcome-videos';
+
+const grid = document.getElementById('grid');
+const statusEl = document.getElementById('status');
+const videoCountEl = document.getElementById('videoCount');
+const assignmentCountEl = document.getElementById('assignmentCount');
+const seenCountEl = document.getElementById('seenCount');
+const selectedFileText = document.getElementById('selectedFileText');
+const uploadSaveBtn = document.getElementById('uploadSaveBtn');
+const uploadProgress = document.getElementById('uploadProgress');
+const uploadProgressBar = uploadProgress.querySelector('span');
+
+let users = [];
+let videos = [];
+let assignments = [];
+
+let currentVideo = null;
+let selectedMemberIds = new Set();
+let selectedUploadFile = null;
+
+function esc(v){
+  return String(v ?? '').replace(/[&<>"']/g,c=>({
+    '&':'&amp;',
+    '<':'&lt;',
+    '>':'&gt;',
+    '"':'&quot;',
+    "'":'&#039;'
+  }[c]));
+}
+
+function showStatus(msg,type=''){
+  statusEl.textContent = msg;
+  statusEl.className = 'status show '+type;
+}
+
+function publicUrl(path){
+  return sb.storage
+    .from(BUCKET)
+    .getPublicUrl(path)
+    .data.publicUrl;
+}
+
+function videoName(name){
+  let n = String(name || '').split('/').pop();
+
+  n = n.replace(
+    /^[0-9a-f]{8}-[0-9a-f-]{27}_/i,
+    ''
+  );
+
+  n = n.replace(
+    /^[0-9a-f]{32}_/i,
+    ''
+  );
+
+  return n || 'فيديو بدون اسم';
+}
+
+function isVideo(name){
+  return /\.(mp4|webm|mov|m4v)$/i.test(name);
+}
+
+function userName(u){
+  return u.full_name ||
+         u.name ||
+         u.email ||
+         'عضو';
+}
+
+function formatSize(n){
+  if(!n)return '';
+
+  let x=n;
+  let unit='B';
+
+  if(x>1024){
+    x/=1024;
+    unit='KB';
+  }
+
+  if(x>1024){
+    x/=1024;
+    unit='MB';
+  }
+
+  if(x>1024){
+    x/=1024;
+    unit='GB';
+  }
+
+  return x.toFixed(unit==='B'?0:1)+' '+unit;
+}
+
+/* ----------------------------------
+   AUTH
+---------------------------------- */
+
+async function checkAuth(){
+
+  const {data} =
+    await sb.auth.getSession();
+
+  if(data.session){
+
+    await loadEverything();
+
+    document.getElementById('loginView').style.display='none';
+    document.getElementById('app').style.display='block';
+
+  }else{
+
+    document.getElementById('loginView').style.display='block';
+    document.getElementById('app').style.display='none';
+
+  }
+}
+
+document
+.getElementById('loginBtn')
+.addEventListener('click',async()=>{
+
+  const email =
+    document.getElementById('email').value.trim();
+
+  const password =
+    document.getElementById('password').value;
+
+  const box =
+    document.getElementById('loginStatus');
+
+  box.textContent='جاري تسجيل الدخول...';
+  box.className='status show';
+
+  const {error} =
+    await sb.auth.signInWithPassword({
+      email,
+      password
+    });
+
+  if(error){
+
+    box.textContent='فشل تسجيل الدخول: '+error.message;
+    box.className='status show error';
+
+    return;
+  }
+
+  await checkAuth();
+});
+
+document
+.getElementById('logoutBtn')
+.addEventListener('click',async()=>{
+
+  await sb.auth.signOut();
+
+  location.reload();
+
+});
+
+/* ----------------------------------
+   LOAD USERS
+---------------------------------- */
+
+async function loadUsers(){
+
+  const {data,error} =
+    await sb
+      .from('profiles')
+      .select('*')
+      .order('created_at',{
+        ascending:false
+      });
+
+  if(error) throw error;
+
+  users =
+    (data || [])
+    .filter(u =>
+      u.role !== 'admin' &&
+      u.role !== 'super_admin'
+    );
+}
+
+/* ----------------------------------
+   LOAD STORAGE
+---------------------------------- */
+
+async function listAll(path='',out=[],seenPaths=new Set()){
+  // نقرأ الـ Storage نفسه فقط — لا ننشئ ولا نغير أي جدول في قاعدة البيانات.
+  // pagination يمنع اختفاء الفيديوهات لو زاد عدد الملفات داخل أي مجلد.
+  const PAGE_SIZE = 1000;
+  let offset = 0;
+
+  while(true){
+    const {data,error} =
+      await sb
+        .storage
+        .from(BUCKET)
+        .list(
+          path,
+          {
+            limit:PAGE_SIZE,
+            offset,
+            sortBy:{
+              column:'name',
+              order:'asc'
+            }
+          }
+        );
+
+    if(error) throw error;
+
+    const items = data || [];
+    if(!items.length) break;
+
+    for(const item of items){
+      if(!item.name) continue;
+
+      const child =
+        path
+          ? path+'/'+item.name
+          : item.name;
+
+      const folder =
+        !item.id &&
+        !item.metadata;
+
+      if(folder){
+        await listAll(child,out,seenPaths);
+      }else if(isVideo(child) && !seenPaths.has(child)){
+        seenPaths.add(child);
+        out.push({
+          path:child,
+          name:videoName(child),
+          size:item.metadata?.size || 0,
+          updated:item.updated_at || item.created_at || ''
+        });
+      }
+    }
+
+    if(items.length < PAGE_SIZE) break;
+    offset += PAGE_SIZE;
+  }
+
+  return out;
+}
+
+/* ----------------------------------
+   LOAD ASSIGNMENTS
+---------------------------------- */
+
+async function loadAssignments(){
+
+  const {data,error} =
+    await sb
+      .from('welcome_video_recipients')
+      .select(
+        'user_id,video_path,viewed_at'
+      )
+      .eq('campaign_id',1);
+
+  if(error) throw error;
+
+  assignments = data || [];
+}
+
+/* ----------------------------------
+   LOAD EVERYTHING
+---------------------------------- */
+
+async function loadEverything(){
+
+  try{
+
+    grid.innerHTML =
+      '<div class="empty">جاري تحميل مكتبة الفيديوهات...</div>';
+
+    await Promise.all([
+      loadUsers(),
+      loadAssignments()
+    ]);
+
+    videos =
+      await listAll('');
+
+    render();
+
+  }catch(error){
+
+    console.error(error);
+
+    grid.innerHTML =
+      '<div class="empty">تعذر تحميل البيانات.</div>';
+
+    showStatus(
+      '❌ '+(error.message || error),
+      'error'
+    );
+  }
+}
+
+/* ----------------------------------
+   ASSIGNMENT HELPERS
+---------------------------------- */
+
+function assignmentsFor(path){
+
+  return assignments.filter(
+    x => x.video_path === path
+  );
+}
+
+function userById(id){
+
+  return users.find(
+    u => String(u.id) === String(id)
+  );
+}
+
+function revokeButton(uid){
+
+  return `
+    <button
+      class="xBtn"
+      title="إلغاء إرسال الفيديو لهذا العضو"
+      data-revoke-user="${esc(uid)}"
+    >✕</button>
+  `;
+}
+
+function userRow(row,seen){
+
+  const u =
+    userById(row.user_id);
+
+  if(!u) return '';
+
+  return `
+    <div class="userRow">
+
+      <div class="userInfo">
+
+        <div class="userName">
+          ${esc(userName(u))}
+        </div>
+
+        <div class="userEmail">
+          ${esc(u.email || '')}
+          ${seen && row.viewed_at
+            ? ' · '+new Date(
+                row.viewed_at
+              ).toLocaleString('ar-EG')
+            : ''}
+        </div>
+
+      </div>
+
+      ${revokeButton(u.id)}
+
+    </div>
+  `;
+}
+
+/* ----------------------------------
+   CARD
+---------------------------------- */
+
+function card(video){
+
+  const rows =
+    assignmentsFor(video.path);
+
+  const pending =
+    rows.filter(
+      x => !x.viewed_at
+    );
+
+  const seen =
+    rows.filter(
+      x => !!x.viewed_at
+    );
+
+  const el =
+    document.createElement('article');
+
+  el.className='card';
+
+  el.innerHTML = `
+
+    <div class="thumb">
+
+      <video
+        muted
+        playsinline
+        preload="metadata"
+        src="${esc(publicUrl(video.path))}"
+      ></video>
+
+      <div class="thumbPlay">
+        <span>▶</span>
+      </div>
+
+    </div>
+
+    <div class="body">
+
+      <div
+        class="name"
+        title="${esc(video.name)}"
+      >
+        ${esc(video.name)}
+      </div>
+
+      <div class="muted">
+        ${formatSize(video.size)}
+      </div>
+
+      <div class="cardBtns">
+
+        <button
+          class="primary"
+          data-preview="${esc(video.path)}"
+        >
+          ▶ معاينة
+        </button>
+
+        <button
+          class="danger"
+          data-delete="${esc(video.path)}"
+        >
+          ✕ حذف
+        </button>
+
+      </div>
+
+      <button
+        class="success"
+        style="width:100%;margin-top:8px"
+        data-members="${esc(video.path)}"
+      >
+        👥 تحديد الأعضاء لهذا الفيديو
+      </button>
+
+      <div class="assignment">
+
+        <div class="assignmentTitle">
+          👥 توزيع هذا الفيديو
+        </div>
+
+        <div class="statusBox">
+
+          <div class="statusHead pendingHead">
+            <span>🟠 لم يشاهدوا</span>
+            <b>${pending.length}</b>
+          </div>
+
+          ${
+            pending.length
+            ? pending
+                .map(x=>userRow(x,false))
+                .join('')
+            : `
+              <div class="muted">
+                لا يوجد أعضاء في الانتظار.
+              </div>
+            `
+          }
+
+        </div>
+
+        <div class="statusBox">
+
+          <div class="statusHead seenHead">
+            <span>🟢 شاهدوا وأغلقوا</span>
+            <b>${seen.length}</b>
+          </div>
+
+          ${
+            seen.length
+            ? seen
+                .map(x=>userRow(x,true))
+                .join('')
+            : `
+              <div class="muted">
+                لم يشاهد أحد الفيديو حتى الآن.
+              </div>
+            `
+          }
+
+        </div>
+
+      </div>
+
+    </div>
+  `;
+
+  el.querySelector(
+    '[data-preview]'
+  ).onclick =
+    ()=>openPreview(video);
+
+  el.querySelector(
+    '[data-delete]'
+  ).onclick =
+    ()=>deleteVideo(video);
+
+  el.querySelector(
+    '[data-members]'
+  ).onclick =
+    ()=>openMembers(video);
+
+  el
+    .querySelectorAll('[data-revoke-user]')
+    .forEach(btn=>{
+
+      btn.onclick =
+        ()=>revokeUser(
+          btn.dataset.revokeUser,
+          video
+        );
+
+    });
+
+  return el;
+}
+
+/* ----------------------------------
+   RENDER
+---------------------------------- */
+
+function render(){
+  grid.innerHTML='';
+
+  videoCountEl.textContent = videos.length;
+  assignmentCountEl.textContent = assignments.length;
+  seenCountEl.textContent = assignments.filter(x=>!!x.viewed_at).length;
+
+  if(!videos.length){
+    grid.innerHTML =
+      '<div class="empty">لا توجد فيديوهات في مكتبة Storage.</div>';
+    return;
+  }
+
+  videos.forEach(
+    v=>grid.appendChild(card(v))
+  );
+}
+
+/* ----------------------------------
+   PREVIEW
+---------------------------------- */
+
+const previewModal =
+  document.getElementById(
+    'previewModal'
+  );
+
+const previewPlayer =
+  document.getElementById(
+    'previewPlayer'
+  );
+
+const previewTitle =
+  document.getElementById(
+    'previewTitle'
+  );
+
+function openPreview(video){
+
+  previewTitle.textContent =
+    video.name;
+
+  previewPlayer.src =
+    publicUrl(video.path);
+
+  previewModal.classList.add('show');
+
+  previewPlayer
+    .play()
+    .catch(()=>{});
+}
+
+function closePreview(){
+
+  previewPlayer.pause();
+
+  previewPlayer.removeAttribute('src');
+
+  previewPlayer.load();
+
+  previewModal.classList.remove('show');
+}
+
+document
+.getElementById('closePreview')
+.onclick=closePreview;
+
+previewModal.addEventListener(
+  'click',
+  e=>{
+    if(e.target===previewModal)
+      closePreview();
+  }
+);
+
+/* ----------------------------------
+   MEMBERS MODAL
+---------------------------------- */
+
+const membersModal =
+  document.getElementById(
+    'membersModal'
+  );
+
+const memberList =
+  document.getElementById(
+    'memberList'
+  );
+
+const memberSearch =
+  document.getElementById(
+    'memberSearch'
+  );
+
+const selectedCount =
+  document.getElementById(
+    'selectedCount'
+  );
+
+function openMembers(video){
+
+  currentVideo=video;
+
+  selectedMemberIds =
+    new Set(
+      assignmentsFor(video.path)
+        .map(x=>String(x.user_id))
+    );
+
+  document.getElementById(
+    'membersTitle'
+  ).textContent =
+    'تحديد أعضاء: '+video.name;
+
+  memberSearch.value='';
+
+  renderMembers();
+
+  membersModal.classList.add('show');
+}
+
+function renderMembers(){
+
+  const q =
+    memberSearch.value
+      .trim()
+      .toLowerCase();
+
+  const filtered =
+    users.filter(u=>{
+
+      const name =
+        String(
+          u.full_name ||
+          u.name ||
+          ''
+        ).toLowerCase();
+
+      const email =
+        String(
+          u.email || ''
+        ).toLowerCase();
+
+      return !q ||
+        name.includes(q) ||
+        email.includes(q);
+    });
+
+  memberList.innerHTML =
+    filtered.map(u=>`
+
+      <label class="member">
+
+        <input
+          type="checkbox"
+          value="${esc(u.id)}"
+          ${selectedMemberIds.has(String(u.id))
+            ? 'checked'
+            : ''}
+        >
+
+        <div class="memberText">
+
+          <strong>
+            ${esc(userName(u))}
+          </strong>
+
+          <small>
+            ${esc(u.email || '')}
+          </small>
+
+        </div>
+
+      </label>
+
+    `).join('');
+
+  memberList
+    .querySelectorAll(
+      'input[type="checkbox"]'
+    )
+    .forEach(chk=>{
+
+      chk.addEventListener(
+        'change',
+        ()=>{
+
+          const id =
+            String(chk.value);
+
+          if(chk.checked)
+            selectedMemberIds.add(id);
+          else
+            selectedMemberIds.delete(id);
+
+          updateSelectedCount();
+        }
+      );
+
+    });
+
+  updateSelectedCount();
+}
+
+function updateSelectedCount(){
+
+  selectedCount.textContent =
+    selectedMemberIds.size+
+    ' عضو محدد';
+}
+
+memberSearch.addEventListener(
+  'input',
+  renderMembers
+);
+
+document
+.getElementById('closeMembers')
+.onclick=closeMembers;
+
+document
+.getElementById('cancelMembers')
+.onclick=closeMembers;
+
+function closeMembers(){
+
+  membersModal.classList.remove('show');
+
+  currentVideo=null;
+}
+
+membersModal.addEventListener(
+  'click',
+  e=>{
+    if(e.target===membersModal)
+      closeMembers();
+  }
+);
+
+/* ----------------------------------
+   SAVE MEMBERS
+---------------------------------- */
+
+document
+.getElementById('saveMembers')
+.addEventListener(
+  'click',
+  async()=>{
+
+    if(!currentVideo)
+      return;
+
+    const btn =
+      document.getElementById(
+        'saveMembers'
+      );
+
+    btn.disabled=true;
+    btn.textContent=
+      'جاري الحفظ...';
+
+    try{
+
+      const ids =
+        [...selectedMemberIds];
+
+      /*
+       * نفس RPC الموجود في موقعك الأساسي.
+       * لذلك التوزيع يظل متوافقًا مع الموقع الأساسي.
+       */
+
+      const {error} =
+        await sb.rpc(
+          'midad_admin_save_welcome_video',
+          {
+            p_video_path:
+              currentVideo.path,
+
+            p_audience_mode:
+              'selected',
+
+            p_user_ids:
+              ids,
+
+            p_is_active:
+              true
+          }
+        );
+
+      if(error)
+        throw error;
+
+      const savedVideoName = currentVideo.name;
+
+      await loadAssignments();
+
+      render();
+
+      showStatus(
+        '✅ تم حفظ توزيع «'+
+        savedVideoName+
+        '» على '+
+        ids.length+
+        ' عضو.',
+        'ok'
+      );
+
+      closeMembers();
+
+    }catch(error){
+
+      console.error(error);
+
+      showStatus(
+        '❌ تعذر حفظ التوزيع: '+
+        (error.message || error),
+        'error'
+      );
+
+    }finally{
+
+      btn.disabled=false;
+      btn.textContent=
+        '💾 حفظ توزيع الفيديو';
+
+    }
+
+  }
+);
+
+/* ----------------------------------
+   REVOKE USER
+---------------------------------- */
+
+async function revokeUser(uid,video){
+
+  const u =
+    userById(uid);
+
+  const ok =
+    confirm(
+      'إلغاء إرسال «'+
+      video.name+
+      '» إلى '+
+      userName(u)+
+      '؟\n\n'+
+      'سيعود الفيديو بالنسبة له كأنه لم يشاهده.'
+    );
+
+  if(!ok)return;
+
+  try{
+
+    const {error} =
+      await sb.rpc(
+        'midad_admin_revoke_welcome_video_recipient',
+        {
+          p_user_id:uid
+        }
+      );
+
+    if(error)
+      throw error;
+
+    await loadAssignments();
+
+    render();
+
+    showStatus(
+      '✅ تم إلغاء إرسال الفيديو إلى '+
+      userName(u)+
+      '.',
+      'ok'
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    showStatus(
+      '❌ تعذر الإلغاء: '+
+      (error.message || error),
+      'error'
+    );
+  }
+}
+
+/* ----------------------------------
+   DELETE VIDEO
+---------------------------------- */
+
+async function deleteVideo(video){
+
+  const ok =
+    confirm(
+      'سيتم حذف الفيديو «'+
+      video.name+
+      '» نهائيًا.\n\n'+
+      'وسيتم إلغاء توزيعه على جميع الأعضاء.\n\n'+
+      'هل تريد المتابعة؟'
+    );
+
+  if(!ok)return;
+
+  try{
+
+    /*
+     * أولًا إلغاء كل التوزيعات.
+     */
+
+    const rows =
+      assignmentsFor(video.path);
+
+    for(const row of rows){
+
+      const {error} =
+        await sb.rpc(
+          'midad_admin_revoke_welcome_video_recipient',
+          {
+            p_user_id:
+              row.user_id
+          }
+        );
+
+      if(error)
+        throw error;
+    }
+
+    /*
+     * ثم حذف الملف من Storage.
+     */
+
+    const {error} =
+      await sb
+        .storage
+        .from(BUCKET)
+        .remove([
+          video.path
+        ]);
+
+    if(error)
+      throw error;
+
+    videos =
+      videos.filter(
+        x=>x.path!==video.path
+      );
+
+    assignments =
+      assignments.filter(
+        x=>x.video_path!==video.path
+      );
+
+    render();
+
+    showStatus(
+      '✅ تم حذف الفيديو نهائيًا.',
+      'ok'
+    );
+
+  }catch(error){
+
+    console.error(error);
+
+    showStatus(
+      '❌ فشل حذف الفيديو: '+
+      (error.message || error),
+      'error'
+    );
+  }
+}
+
+/* ----------------------------------
+   UPLOAD
+---------------------------------- */
+
+const fileInput =
+  document.getElementById('fileInput');
+
+fileInput.addEventListener('change', e=>{
+  const file = e.target.files?.[0] || null;
+  selectedUploadFile = null;
+  uploadSaveBtn.disabled = true;
+  uploadProgress.classList.remove('show');
+  uploadProgressBar.style.width='0%';
+
+  if(!file){
+    selectedFileText.textContent =
+      'لم يتم اختيار فيديو. الاختيار وحده لا يرفع أي شيء.';
+    return;
+  }
+
+  if(!file.type.startsWith('video/')){
+    showStatus(
+      '❌ اختار ملف فيديو صحيح.',
+      'error'
+    );
+    fileInput.value='';
+    selectedFileText.textContent =
+      'لم يتم اختيار فيديو. الاختيار وحده لا يرفع أي شيء.';
+    return;
+  }
+
+  selectedUploadFile = file;
+  selectedFileText.textContent =
+    '✅ تم اختيار: '+file.name+' — اضغط «حفظ ورفع الفيديو» لإضافته للمكتبة.';
+  uploadSaveBtn.disabled = false;
+});
+
+uploadSaveBtn.addEventListener('click', async()=>{
+  const file = selectedUploadFile;
+  if(!file) return;
+
+  uploadSaveBtn.disabled = true;
+  fileInput.disabled = true;
+  uploadProgress.classList.add('show');
+  uploadProgressBar.style.width='10%';
+
+  try{
+    showStatus(
+      '⬆️ جاري رفع «'+file.name+'»...'
+    );
+
+    const clean =
+      file.name
+        .replace(
+          /[^\w.\-\u0600-\u06FF ]+/g,
+          '_'
+        )
+        .replace(/\s+/g,'_')
+        .slice(0,150);
+
+    let path = 'thumbs/'+clean;
+
+    let result =
+      await sb
+        .storage
+        .from(BUCKET)
+        .upload(
+          path,
+          file,
+          {
+            upsert:false,
+            cacheControl:'3600',
+            contentType:file.type || 'video/mp4'
+          }
+        );
+
+    uploadProgressBar.style.width='65%';
+
+    if(
+      result.error &&
+      /already exists|duplicate|409/i.test(
+        result.error.message || ''
+      )
+    ){
+      const dot = clean.lastIndexOf('.');
+      const base = dot>0 ? clean.slice(0,dot) : clean;
+      const ext = dot>0 ? clean.slice(dot) : '';
+
+      path =
+        'thumbs/'+
+        base+'_'+Date.now()+ext;
+
+      result =
+        await sb
+          .storage
+          .from(BUCKET)
+          .upload(
+            path,
+            file,
+            {
+              upsert:false,
+              cacheControl:'3600',
+              contentType:file.type || 'video/mp4'
+            }
+          );
+    }
+
+    if(result.error) throw result.error;
+
+    // نعيد القراءة من Storage بدل الاعتماد على عنصر محلي،
+    // حتى يظهر نفس الفيديو الذي أصبح موجودًا فعليًا في المكتبة.
+    await loadEverything();
+
+    uploadProgressBar.style.width='100%';
+
+    showStatus(
+      '✅ تم رفع «'+file.name+'» كاملًا بدون قص أو تغيير في مدة الفيديو.',
+      'ok'
+    );
+
+    selectedUploadFile = null;
+    fileInput.value='';
+    selectedFileText.textContent =
+      'لم يتم اختيار فيديو. الاختيار وحده لا يرفع أي شيء.';
+
+  }catch(error){
+    console.error(error);
+    showStatus(
+      '❌ فشل رفع الفيديو: '+(error.message || error),
+      'error'
+    );
+  }finally{
+    uploadSaveBtn.disabled = !selectedUploadFile;
+    fileInput.disabled = false;
+    setTimeout(()=>{
+      uploadProgress.classList.remove('show');
+      uploadProgressBar.style.width='0%';
+    },700);
+  }
+});
+
+/* ----------------------------------
+   REFRESH
+---------------------------------- */
+
+document
+.getElementById('refreshBtn')
+.onclick=
+  loadEverything;
+
+/* ----------------------------------
+   START
+---------------------------------- */
+
+checkAuth();
+
+</script>
+<script>
+/* Lightweight theme controller — all four designs live inside this one HTML file. */
+(function(){
+  const KEY='midad_video_library_theme';
+  const names=['baby','forest','slate','creative'];
+  const stage=document.createElement('div');
+  stage.className='theme-stage'; stage.id='themeStage'; document.body.appendChild(stage);
+  function particle(cls,style,html=''){const x=document.createElement('i');x.className='theme-particle '+cls;x.style.cssText=style;x.innerHTML=html;stage.appendChild(x)}
+  function clear(){stage.innerHTML=''}
+  function decorate(theme){
+    clear();
+    if(theme==='baby'){
+      for(let i=0;i<8;i++) particle('bubble',`left:${4+i*12}%;bottom:${-10-(i%3)*8}px;animation-delay:-${i*1.4}s;animation-duration:${10+(i%4)}s`);
+      for(let i=0;i<3;i++) particle('cloud',`left:${-5+i*42}%;top:${14+i*18}%;animation-delay:-${i*6}s`);
+      for(let i=0;i<4;i++) particle('twinkle',`left:${12+i*24}%;top:${25+(i%2)*28}%;animation-delay:-${i*1.5}s`, '✦');
+    } else if(theme==='forest'){
+      for(let i=0;i<10;i++) particle('forest-leaf',`left:${3+i*10}%;animation-delay:-${i*.9}s;animation-duration:${9+(i%4)}s`);
+      for(let i=0;i<5;i++) particle('firefly',`left:${10+i*19}%;top:${22+(i%3)*19}%;animation-delay:-${i*.8}s`);
+    } else if(theme==='slate'){
+      particle('amber-line','position:absolute;left:8%;right:8%;top:13%;opacity:.35');
+      for(let i=0;i<5;i++) particle('metal-chip',`left:${8+i*21}%;top:${22+(i%2)*34}%;animation-delay:-${i*.8}s`);
+    } else {
+      for(let i=0;i<3;i++) particle('creative-orb',`width:${110+i*55}px;height:${110+i*55}px;left:${5+i*38}%;top:${18+(i%2)*50}%;animation-delay:-${i*2}s`);
+      for(let i=0;i<6;i++) particle('creative-dot',`left:${9+i*16}%;top:${16+(i%3)*27}%;animation-delay:-${i*.5}s`);
+    }
+  }
+  function setTheme(theme){
+    if(!names.includes(theme)) theme='baby';
+    document.body.classList.remove(...names.map(x=>'theme-'+x));
+    document.body.classList.add('theme-'+theme);
+    document.documentElement.dataset.libraryTheme=theme;
+    document.querySelectorAll('.theme-btn').forEach(b=>b.classList.toggle('active',b.dataset.theme===theme));
+    decorate(theme);
+    try{localStorage.setItem(KEY,theme)}catch(e){}
+  }
+  document.querySelectorAll('.theme-btn').forEach(b=>b.addEventListener('click',()=>setTheme(b.dataset.theme)));
+  let saved='baby'; try{saved=localStorage.getItem(KEY)||'baby'}catch(e){}
+  setTheme(saved);
+})();
+</script>
+
+</body>
+</html>

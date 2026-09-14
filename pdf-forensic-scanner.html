@@ -1,0 +1,324 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="theme-color" content="#0f172a">
+<link rel="icon" type="image/png" href="1.png">
+<title>IN THE VOID — PDF Forensic Scanner</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+<script src="pdf-fingerprint-engine.js"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800;900&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<style>
+:root{
+  --bg:#05070d;
+  --surface:#0b101b;
+  --surface2:#101827;
+  --surface3:#0d1421;
+  --border:rgba(148,163,184,.14);
+  --border-strong:rgba(139,92,246,.34);
+  --text:#f8fafc;
+  --muted:#8fa0b8;
+  --accent:#8b5cf6;
+  --accent2:#22d3ee;
+  --good:#22c55e;
+  --bad:#ef4444;
+  --warn:#f59e0b;
+  --radius:20px;
+}
+*{box-sizing:border-box}
+html{scroll-behavior:smooth}
+body{
+  margin:0;min-height:100vh;color:var(--text);
+  font-family:'Cairo',system-ui,sans-serif;
+  background:
+    radial-gradient(900px 500px at 8% -10%,rgba(139,92,246,.18),transparent 62%),
+    radial-gradient(800px 500px at 100% 4%,rgba(34,211,238,.11),transparent 58%),
+    radial-gradient(600px 400px at 50% 100%,rgba(99,102,241,.07),transparent 65%),
+    var(--bg);
+}
+body:before{
+  content:"";position:fixed;inset:0;pointer-events:none;opacity:.32;
+  background-image:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px),linear-gradient(90deg,rgba(255,255,255,.018) 1px,transparent 1px);
+  background-size:34px 34px;
+  mask-image:linear-gradient(to bottom,black,transparent 78%);
+}
+.wrap{width:min(1180px,calc(100% - 32px));margin:0 auto;padding:26px 0 60px;position:relative}
+.top{display:flex;align-items:center;justify-content:space-between;gap:16px;margin-bottom:20px}
+.brand{display:flex;align-items:center;gap:12px}
+.brand img{
+  width:48px;height:48px;border-radius:15px;object-fit:cover;
+  border:1px solid rgba(255,255,255,.12);background:#111827;
+  box-shadow:0 10px 30px rgba(0,0,0,.28),0 0 0 5px rgba(139,92,246,.05)
+}
+.brand b{display:block;font-size:17px;letter-spacing:.2px}
+.brand small{display:block;color:var(--muted);font-size:10px;margin-top:1px}
+.back{
+  display:inline-flex;align-items:center;gap:8px;padding:10px 14px;border-radius:12px;
+  border:1px solid var(--border);background:rgba(11,16,27,.72);color:#dbeafe;
+  text-decoration:none;font-weight:800;font-size:11px;transition:.22s;
+  backdrop-filter:blur(14px)
+}
+.back:hover{border-color:var(--border-strong);transform:translateY(-2px);background:rgba(17,24,39,.92)}
+.hero{
+  position:relative;overflow:hidden;
+  border:1px solid var(--border);
+  background:linear-gradient(145deg,rgba(16,24,39,.94),rgba(7,10,17,.96));
+  border-radius:28px;padding:34px;
+  box-shadow:0 28px 90px rgba(0,0,0,.34),inset 0 1px 0 rgba(255,255,255,.025);
+}
+.hero:before{
+  content:"";position:absolute;width:330px;height:330px;border-radius:50%;
+  right:-130px;top:-190px;background:rgba(139,92,246,.16);filter:blur(10px);pointer-events:none
+}
+.hero:after{
+  content:"";position:absolute;width:240px;height:240px;border-radius:50%;
+  left:-120px;bottom:-180px;background:rgba(34,211,238,.09);filter:blur(18px);pointer-events:none
+}
+.hero h1{position:relative;font-size:32px;line-height:1.25;margin:0 0 9px;letter-spacing:-.4px}
+.hero p{position:relative;color:var(--muted);margin:0;line-height:1.95;font-size:13px;max-width:790px}
+.pill{
+  position:relative;display:inline-flex;align-items:center;gap:7px;margin-top:17px;
+  padding:7px 11px;border-radius:999px;background:rgba(139,92,246,.08);
+  border:1px solid rgba(139,92,246,.22);font-size:10px;color:#ddd6fe
+}
+.pill i{font-size:10px}
+.scan-card{
+  margin-top:19px;border:1px solid rgba(148,163,184,.12);border-radius:22px;
+  padding:11px;background:rgba(5,8,14,.46);box-shadow:inset 0 1px 0 rgba(255,255,255,.018)
+}
+.drop{
+  display:block;border:1px dashed rgba(148,163,184,.30);border-radius:17px;
+  padding:34px 20px;text-align:center;cursor:pointer;transition:.25s;
+  background:linear-gradient(180deg,rgba(15,23,36,.72),rgba(8,12,20,.52))
+}
+.drop:hover,.drop.drag{
+  border-color:rgba(139,92,246,.72);
+  background:linear-gradient(180deg,rgba(139,92,246,.09),rgba(34,211,238,.025));
+  transform:translateY(-2px);box-shadow:0 14px 45px rgba(0,0,0,.2)
+}
+.drop i{
+  display:grid;place-items:center;width:58px;height:58px;margin:0 auto;
+  border-radius:17px;font-size:27px;color:#ddd6fe;
+  background:linear-gradient(145deg,rgba(139,92,246,.18),rgba(34,211,238,.07));
+  border:1px solid rgba(139,92,246,.22);box-shadow:0 10px 30px rgba(0,0,0,.2)
+}
+.drop strong{display:block;font-size:16px;margin:12px 0 4px}
+.drop span{display:block;font-size:11px;color:var(--muted);line-height:1.8}
+.drop input{display:none}
+.status{
+  margin-top:11px;padding:10px 13px;border-radius:12px;font-size:11px;display:none;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.02)
+}
+.status.show{display:block}
+.status.info{background:rgba(11,18,32,.9);border:1px solid rgba(59,130,246,.24);color:#bfdbfe}
+.status.err{background:rgba(42,17,21,.8);border:1px solid rgba(239,68,68,.28);color:#fecaca}
+.status.ok{background:rgba(12,30,20,.8);border:1px solid rgba(34,197,94,.25);color:#bbf7d0}
+.results{display:none;margin-top:18px;animation:rise .35s ease both}
+.results.show{display:block}
+@keyframes rise{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.summary{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:11px;margin-bottom:13px}
+.stat{
+  position:relative;overflow:hidden;border:1px solid var(--border);background:rgba(11,16,27,.84);
+  border-radius:17px;padding:15px;box-shadow:0 10px 30px rgba(0,0,0,.12)
+}
+.stat:after{content:"";position:absolute;inset:0;background:linear-gradient(135deg,rgba(139,92,246,.04),transparent 55%);pointer-events:none}
+.stat small{display:block;color:var(--muted);font-size:9px}
+.stat b{display:block;margin-top:5px;font-size:15px;word-break:break-word}
+.section{
+  border:1px solid var(--border);background:rgba(11,16,27,.88);border-radius:21px;
+  padding:17px;box-shadow:0 14px 45px rgba(0,0,0,.15),inset 0 1px 0 rgba(255,255,255,.02)
+}
+.section + .section{margin-top:12px}
+.section-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:12px}
+.section-head h2{font-size:14px;margin:0;display:flex;align-items:center;gap:7px}
+.section-head h2 i{color:#a78bfa;font-size:12px}
+.badge{
+  font-size:9px;font-weight:900;padding:5px 9px;border-radius:999px;
+  background:rgba(15,23,36,.9);border:1px solid var(--border);color:#cbd5e1;white-space:nowrap
+}
+.identity{display:grid;grid-template-columns:1.25fr 1fr;gap:10px}
+.card{
+  border:1px solid rgba(148,163,184,.12);background:linear-gradient(145deg,rgba(16,24,39,.9),rgba(12,18,29,.88));
+  border-radius:15px;padding:13px;transition:.2s
+}
+.card:hover{border-color:rgba(139,92,246,.2)}
+.label{font-size:9px;color:var(--muted);margin-bottom:5px}
+.value{font-size:12px;font-weight:800;word-break:break-word}
+.value.mono{
+  font-family:'Outfit',monospace;direction:ltr;text-align:left;font-size:10px;line-height:1.7;
+  color:#dbeafe
+}
+.rowgrid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px}
+.verify{display:inline-flex;align-items:center;gap:6px;padding:5px 9px;border-radius:999px;font-size:9px;font-weight:900}
+.verify.good{background:rgba(9,32,20,.8);color:#86efac;border:1px solid rgba(34,197,94,.28)}
+.verify.bad{background:rgba(42,17,21,.8);color:#fca5a5;border:1px solid rgba(239,68,68,.28)}
+.verify.warn{background:rgba(36,26,9,.8);color:#fcd34d;border:1px solid rgba(245,158,11,.28)}
+.history{display:grid;gap:8px}
+.history-item{
+  display:grid;grid-template-columns:auto 1fr auto;gap:11px;align-items:center;
+  border:1px solid rgba(148,163,184,.11);background:rgba(16,24,39,.76);
+  padding:11px;border-radius:15px;transition:.2s
+}
+.history-item:hover{border-color:rgba(139,92,246,.22);transform:translateX(-2px)}
+.num{
+  width:31px;height:31px;border-radius:10px;display:grid;place-items:center;
+  background:linear-gradient(145deg,rgba(139,92,246,.15),rgba(15,23,42,.9));
+  color:#c4b5fd;font-weight:900;border:1px solid rgba(139,92,246,.14)
+}
+.history-main b{display:block;font-size:11px}
+.history-main small{display:block;color:var(--muted);font-size:9px;margin-top:3px;line-height:1.7}
+.history-time{text-align:left;font-family:'Outfit',monospace;font-size:10px;color:#cbd5e1;white-space:nowrap}
+.muted{color:var(--muted);font-size:10px;line-height:1.8}
+.footer-note{text-align:center;color:#58677e;font-size:9px;margin-top:18px;line-height:1.8}
+@media(max-width:800px){
+  .summary{grid-template-columns:1fr 1fr}
+  .identity{grid-template-columns:1fr}
+}
+@media(max-width:520px){
+  .wrap{width:min(100% - 16px,1180px);padding-top:14px}
+  .top{align-items:flex-start}
+  .brand img{width:44px;height:44px}
+  .hero{padding:21px;border-radius:21px}
+  .hero h1{font-size:25px}
+  .hero p{font-size:12px}
+  .summary,.rowgrid{grid-template-columns:1fr}
+  .history-item{grid-template-columns:auto 1fr}
+  .history-time{grid-column:2;text-align:right}
+  .back{font-size:10px;padding:9px 11px}
+}
+
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="top">
+    <div class="brand"><img src="1.png" alt="IN THE VOID"><div><b>IN THE VOID</b><small>PDF Forensic Scanner</small></div></div>
+    <a class="back" href="app/index.html"><i class="fas fa-arrow-right"></i> العودة للمنصة</a>
+  </div>
+  <section class="hero">
+    <h1>فحص بصمة ملف PDF 🔎</h1>
+    <p>ارفع نسخة الـPDF هنا لمعرفة صاحب/أصحاب البصمات المسجلة داخلها، تاريخ ووقت كل تنزيل معروف، وسلامة النسخة الحالية مقارنةً بالـSHA-256 المسجل على الخادم.</p>
+    <div class="pill"><i class="fas fa-shield-halved"></i> الفحص متاح لحسابات الأدمن فقط</div>
+    <div class="scan-card">
+      <label class="drop" id="drop"><i class="fas fa-file-pdf"></i><strong>اختار ملف PDF للفحص</strong><span>اضغط هنا أو اسحب الملف وأسقطه — الفحص يتم داخل المتصفح ثم تتم مطابقة البصمة مع سجل Supabase.</span><input id="file" type="file" accept="application/pdf,.pdf"></label>
+      <div id="status" class="status"></div>
+    </div>
+  </section>
+
+  <section id="results" class="results">
+    <div class="summary">
+      <div class="stat"><small>اسم الملف</small><b id="fileName">—</b></div>
+      <div class="stat"><small>عدد البصمات المكتشفة</small><b id="markerCount">0</b></div>
+      <div class="stat"><small>وقت الكشف</small><b id="scanTime">—</b></div>
+      <div class="stat"><small>موقع الكشف</small><b id="scanSite">—</b></div>
+    </div>
+    <div class="section">
+      <div class="section-head"><h2><i class="fas fa-circle-info"></i> نتيجة الفحص</h2><span class="badge" id="overallBadge">جاري التحقق</span></div>
+      <div class="identity" id="resultsCards"></div>
+    </div>
+    <div class="section">
+      <div class="section-head"><h2><i class="fas fa-timeline"></i> سجل البصمات المعروفة</h2><span class="badge" id="historyCount">0 سجل</span></div>
+      <div class="history" id="history"></div>
+    </div>
+    <div class="section">
+      <div class="section-head"><h2><i class="fas fa-fingerprint"></i> البصمات المستخرجة من الملف</h2><span class="badge">IVFP2</span></div>
+      <div id="rawMarkers" class="muted"></div>
+    </div>
+  </section>
+  <div class="footer-note">مهم: غياب البصمة لا يثبت وحده أن الملف أصلي أو مزور. إعادة بناء الـPDF من الصفر قد تزيل أي علامة مضمّنة.</div>
+</div>
+<script>
+'use strict';
+const SUPABASE_URL='https://clobfjrjhdysmqhbwzlc.supabase.co';
+const SUPABASE_KEY='sb_publishable_LEFYVl0Y8VOnMIbBZev1Vg_0pYSMWpv';
+const sb=window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+const drop=$('drop'),input=$('file'),status=$('status');
+function setStatus(text,type='info'){status.textContent=text;status.className='status show '+type}
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]))}
+function fmtCairo(ts){try{return new Intl.DateTimeFormat('ar-EG',{timeZone:'Africa/Cairo',dateStyle:'full',timeStyle:'medium'}).format(new Date(ts))}catch(_){return new Date(ts).toLocaleString('ar-EG')}}
+async function hash(buf){const h=await crypto.subtle.digest('SHA-256',buf);return [...new Uint8Array(h)].map(x=>x.toString(16).padStart(2,'0')).join('')}
+async function requireAdmin(){const {data:{user}}=await sb.auth.getUser();if(!user)throw new Error('يجب تسجيل الدخول بحسابك أولًا.');const {data:p,error}=await sb.from('profiles').select('id,full_name,name,role,status').eq('id',user.id).maybeSingle();if(error)throw error;if(!p||!['admin','super_admin'].includes(String(p.role))||['pending','revoked'].includes(String(p.status||'active')))throw new Error('هذه الصفحة متاحة للأدمن الذهبي فقط.');return p}
+function roleText(x){return x||'عضو'}
+function renderHistory(rows){
+  const box=$('history');box.innerHTML='';
+  if(!rows.length){box.innerHTML='<div class="muted">لم يتم العثور على سجل مطابق لأي بصمة داخل الملف.</div>';return}
+  rows.sort((a,b)=>new Date(a.downloaded_at||0)-new Date(b.downloaded_at||0));
+  rows.forEach((r,i)=>{
+    const el=document.createElement('div');el.className='history-item';
+    el.innerHTML=`<div class="num">${i+1}</div><div class="history-main"><b>${esc(r.user_name||'عضو')} <span class="badge">${esc(roleText(r.role_label))}</span></b><small>${esc(r.file_name||'ملف PDF')} · ${esc(r.download_day||'')} · البصمة ${esc(String(r.fingerprint||'').slice(0,16))}…</small></div><div class="history-time">${esc(fmtCairo(r.downloaded_at||`${r.download_date||''}T${r.download_time||''}`))}</div>`;
+    box.appendChild(el);
+  });
+  $('historyCount').textContent=`${rows.length} سجل`;
+}
+function card(label,value,mono=false){return `<div class="card"><div class="label">${esc(label)}</div><div class="value ${mono?'mono':''}">${value}</div></div>`}
+async function scanFile(file){
+  $('results').classList.remove('show');
+  setStatus('جاري التحقق من صلاحية حسابك…','info');
+  await requireAdmin();
+  if(!file||file.type!=='application/pdf'&&!/\.pdf$/i.test(file.name))throw new Error('اختار ملف PDF صحيح.');
+  const inputBuffer=await file.arrayBuffer();
+  setStatus('جاري استخراج البصمات ومطابقة السجل…','info');
+  const [markers,finalHash]=await Promise.all([window.InTheVoidPDFFingerprint.extract(inputBuffer),hash(inputBuffer)]);
+  $('fileName').textContent=file.name||'file.pdf';
+  $('markerCount').textContent=String(markers.length);
+  $('scanTime').textContent=fmtCairo(new Date());
+  $('scanSite').textContent=location.origin||location.host||'الموقع الحالي';
+  $('rawMarkers').innerHTML=markers.length?markers.map(m=>`<div class="card" style="margin-bottom:8px"><div class="label">Fingerprint</div><div class="value mono">${esc(m.f||'—')}</div><div class="label" style="margin-top:8px">صاحب العلامة داخل الملف</div><div class="value">${esc(m.n||'—')} · ${esc(roleText(m.r))}</div><div class="label" style="margin-top:8px">التاريخ والوقت المضمّنان</div><div class="value">${esc(m.d||'—')} ${esc(m.t||'')} · ${esc(m.w||'')}</div></div>`).join(''):'<div class="muted">لم يتم اكتشاف علامة IVFP2 داخل الملف.</div>';
+  if(!markers.length){
+    $('overallBadge').className='badge';$('overallBadge').textContent='بحث SHA-256';
+    let byHash=[];
+    try{ const r=await sb.rpc('midad_lookup_pdf_sha256',{p_sha256:finalHash}); if(!r.error) byHash=Array.isArray(r.data)?r.data:[]; }catch(err){ console.warn('SHA lookup failed',err); }
+    const current=byHash[byHash.length-1]||null;
+    $('resultsCards').innerHTML=byHash.length
+      ? card('حالة الملف','<span class="verify good"><i class="fas fa-check"></i> النسخة مطابقة لنسخة تنزيل مسجلة</span>')+card('SHA-256 للنسخة الحالية',finalHash,true)+card('آخر صاحب معروف',`<strong>${esc(current.user_name||'عضو')}</strong><br><span class="muted">${esc(current.role_label||'عضو')}</span>`)
+      : card('حالة الملف','<span class="verify warn"><i class="fas fa-triangle-exclamation"></i> لا توجد بصمة مقروءة ولا تطابق SHA-256 في السجل</span>')+card('SHA-256 للنسخة الحالية',finalHash,true);
+    renderHistory(byHash);$('rawMarkers').innerHTML='<div class="muted">لم يتم استخراج IVFP2 من محتوى الـPDF. تم تشغيل البحث الاحتياطي بالـSHA-256.</div>';
+    $('results').classList.add('show');
+    setStatus(byHash.length?'تم العثور على النسخة في سجل التنزيلات بالـSHA-256 حتى بدون قراءة البصمة.':'تم الفحص بالكامل، لكن لا توجد علامة IVFP2 مقروءة ولا نسخة مطابقة في سجل SHA-256.','ok');
+    return;
+  }
+  const unique=[...new Map(markers.map(x=>[String(x.f||'').toUpperCase(),x])).values()].filter(x=>x.f);
+  const results=[];let matched=0,hashMatches=0;
+  for(const marker of unique){
+    try{
+      const r=await sb.rpc('midad_lookup_pdf_fingerprint',{p_fingerprint:marker.f});
+      if(r.error)throw r.error;
+      const row=Array.isArray(r.data)&&r.data.length?r.data[0]:null;
+      if(row){matched++;results.push(row);if(row.final_sha256&&String(row.final_sha256).toLowerCase()===finalHash.toLowerCase())hashMatches++;}
+    }catch(err){console.warn('lookup failed',marker.f,err)}
+  }
+  let hashRows=[];
+  if(!results.some(r=>String(r.final_sha256||'').toLowerCase()===finalHash.toLowerCase())){
+    try{ const hr=await sb.rpc('midad_lookup_pdf_sha256',{p_sha256:finalHash}); if(!hr.error) hashRows=Array.isArray(hr.data)?hr.data:[]; }catch(err){ console.warn('SHA fallback failed',err); }
+  }
+  const combined=[...results];
+  for(const row of hashRows){ if(!combined.some(x=>String(x.fingerprint||'').toUpperCase()===String(row.fingerprint||'').toUpperCase())) combined.push(row); }
+  const current=combined[combined.length-1]||null;
+  const hashOk=combined.some(r=>String(r.final_sha256||'').toLowerCase()===finalHash.toLowerCase());
+  const trusted=matched>0 || hashRows.length>0;
+  $('overallBadge').className='badge';
+  $('overallBadge').textContent=trusted?(hashOk?'بصمة موثقة + SHA مطابق':'بصمة موثقة'):'بصمة غير معروفة';
+  $('resultsCards').innerHTML=
+    card('آخر سجل معروف',current?`<strong>${esc(current.user_name)}</strong><br><span class="muted">${esc(current.role_label||'عضو')}</span>`:'<span class="verify bad"><i class="fas fa-circle-xmark"></i> غير موجود في السجل</span>')+
+    card('وقت آخر تنزيل معروف',current?esc(fmtCairo(current.downloaded_at||`${current.download_date||''}T${current.download_time||''}`)):'—')+
+    card('SHA-256 للنسخة الحالية',esc(finalHash),true)+
+    card('مطابقة SHA-256',hashOk?'<span class="verify good"><i class="fas fa-check"></i> مطابق لسجل واحد على الأقل</span>':'<span class="verify warn"><i class="fas fa-triangle-exclamation"></i> لا توجد مطابقة كاملة في السجل</span>');
+  renderHistory(combined);
+  $('results').classList.add('show');
+  if(trusted)setStatus(hashOk?'تم الفحص بنجاح: تم التعرف على البصمة ومطابقة SHA-256 مع سجل مسجل.':'تم التعرف على البصمة، لكن هاش النسخة الحالية لا يطابق الـSHA المسجل في السجل.','ok');
+  else setStatus('تم استخراج بصمات من الملف، لكن لم نجد لها سجلات مسجلة في قاعدة البيانات.','err');
+}
+input.addEventListener('change',()=>{const f=input.files?.[0];if(f)scanFile(f).catch(e=>setStatus(e.message||'حدث خطأ أثناء الفحص.','err'))});
+['dragenter','dragover'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.add('drag')}));
+['dragleave','drop'].forEach(ev=>drop.addEventListener(ev,e=>{e.preventDefault();drop.classList.remove('drag')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files?.[0];if(f){input.files=e.dataTransfer.files;scanFile(f).catch(err=>setStatus(err.message||'حدث خطأ أثناء الفحص.','err'))}});
+(async()=>{try{await requireAdmin();setStatus('تم التحقق من صلاحيات الأدمن. ارفع ملفًا لبدء الفحص.','ok')}catch(e){setStatus(e.message||'تعذر التحقق من الحساب.','err')}})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1351 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+    <head>
+    <!-- MIDAD PWA: cross-browser home-screen support -->
+    <link rel="manifest" href="manifest.webmanifest">
+    <link rel="icon" type="image/png" href="1.png">
+    <link rel="apple-touch-icon" sizes="180x180" href="icon-192.png">
+    <meta name="application-name" content="سر">
+    <meta name="apple-mobile-web-app-title" content="سر">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="default">
+    <meta name="theme-color" content="#ffffff">
+    <!-- /MIDAD PWA -->
+
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>تسجيل الدخول</title>
+        <style>
+            *,
+            *:after,
+            *:before {
+                box-sizing: border-box;
+            }
+
+            :root {
+                --cord: hsl(210, 0%, calc((40 + (var(--on, 0) * 50)) * 1%));
+                --opening: hsl(
+                    50,
+                    calc((10 + (var(--on, 0) * 80)) * 1%),
+                    calc((20 + (var(--on, 0) * 70)) * 1%)
+                );
+                --feature: #0a0a0a;
+                --accent: 210;
+                --tongue: #e06952;
+                --base-top: hsl(
+                    var(--accent),
+                    0%,
+                    calc((40 + (var(--on, 0) * 40)) * 1%)
+                );
+                --base-side: hsl(
+                    var(--accent),
+                    0%,
+                    calc((20 + (var(--on, 0) * 40)) * 1%)
+                );
+                --post: hsl(
+                    var(--accent),
+                    0%,
+                    calc((20 + (var(--on, 0) * 40)) * 1%)
+                );
+                --b-1: hsla(
+                    45,
+                    calc((0 + (var(--on, 0) * 0)) * 1%),
+                    calc((50 + (var(--on, 0) * 50)) * 1%),
+                    0.85
+                );
+                --b-2: hsla(
+                    45,
+                    calc((0 + (var(--on, 0) * 0)) * 1%),
+                    calc((20 + (var(--on, 0) * 30)) * 1%),
+                    0.25
+                );
+                --b-3: hsla(
+                    45,
+                    calc((0 + (var(--on, 0) * 0)) * 1%),
+                    calc((20 + (var(--on, 0) * 30)) * 1%),
+                    0.5
+                );
+                --b-4: hsla(
+                    45,
+                    calc((0 + (var(--on, 0) * 0)) * 1%),
+                    calc((20 + (var(--on, 0) * 30)) * 1%),
+                    0.25
+                );
+                --l-1: hsla(
+                    45,
+                    calc((0 + (var(--on, 0) * 20)) * 1%),
+                    calc((50 + (var(--on, 0) * 50)) * 1%),
+                    0.85
+                );
+                --l-2: hsla(
+                    45,
+                    calc((0 + (var(--on, 0) * 20)) * 1%),
+                    calc((50 + (var(--on, 0) * 50)) * 1%),
+                    0.85
+                );
+                --shade-hue: 320;
+                --t-1: hsl(
+                    var(--shade-hue),
+                    calc((0 + (var(--on, 0) * 20)) * 1%),
+                    calc((30 + (var(--on, 0) * 60)) * 1%)
+                );
+                --t-2: hsl(
+                    var(--shade-hue),
+                    calc((0 + (var(--on, 0) * 20)) * 1%),
+                    calc((20 + (var(--on, 0) * 35)) * 1%)
+                );
+                --t-3: hsl(
+                    var(--shade-hue),
+                    calc((0 + (var(--on, 0) * 20)) * 1%),
+                    calc((10 + (var(--on, 0) * 20)) * 1%)
+                );
+                --glow-color: hsl(320, 40%, 45%);
+                --glow-color-dark: hsl(320, 40%, 35%);
+            }
+
+            body {
+                min-height: 100vh;
+                display: grid;
+                place-items: center;
+                background: #121921;
+                margin: 0;
+                font-family: system-ui, -apple-system, sans-serif;
+            }
+
+            .container {
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                gap: 8vmin;
+                flex-wrap: wrap;
+                padding: 2rem;
+            }
+
+            .login-form {
+                background: rgba(18, 25, 33, 0.9);
+                padding: 3rem 2.5rem;
+                border-radius: 20px;
+                min-width: 320px;
+                opacity: 0;
+                transform: scale(0.8) translateY(20px);
+                pointer-events: none;
+                transition: all 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+                border: 2px solid transparent;
+                box-shadow: 0 0 0px rgba(255, 255, 255, 0);
+            }
+
+            .login-form.active {
+                opacity: 1;
+                transform: scale(1) translateY(0);
+                pointer-events: all;
+                border-color: var(--glow-color);
+                box-shadow: 0 0 15px rgba(255, 255, 255, 0.1),
+                    0 0 30px var(--glow-color),
+                    inset 0 0 15px rgba(255, 255, 255, 0.05);
+            }
+
+            .login-form h2 {
+                color: #fff;
+                font-size: 2rem;
+                margin: 0 0 2rem 0;
+                text-align: center;
+                text-shadow: 0 0 8px var(--glow-color);
+            }
+
+            .form-group {
+                margin-bottom: 1.5rem;
+            }
+
+            .form-group label {
+                display: block;
+                color: #aaa;
+                font-size: 0.9rem;
+                margin-bottom: 0.5rem;
+                text-shadow: 0 0 5px var(--glow-color);
+            }
+
+            .form-group input {
+                width: 100%;
+                padding: 0.75rem 1rem;
+                background: rgba(255, 255, 255, 0.05);
+                border: 2px solid rgba(255, 255, 255, 0.1);
+                border-radius: 10px;
+                color: #fff;
+                font-size: 1rem;
+                transition: all 0.3s ease;
+            }
+
+            .form-group input:focus {
+                outline: none;
+                border-color: var(--glow-color);
+                box-shadow: 0 0 10px var(--glow-color);
+                background: rgba(255, 255, 255, 0.08);
+            }
+
+            .form-group input::placeholder {
+                color: #666;
+            }
+
+            .login-btn {
+                width: 100%;
+                padding: 0.875rem;
+                background: linear-gradient(
+                    135deg,
+                    var(--glow-color),
+                    var(--glow-color-dark)
+                );
+                border: none;
+                border-radius: 10px;
+                color: #fff;
+                font-size: 1rem;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.3s ease;
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+                margin-top: 0.5rem;
+            }
+
+            .login-btn:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3),
+                    0 0 20px var(--glow-color);
+            }
+
+            .login-btn:active {
+                transform: translateY(0);
+            }
+
+            .form-footer {
+                margin-top: 1.5rem;
+                text-align: center;
+            }
+
+            .forgot-link {
+                color: #888;
+                font-size: 0.9rem;
+                text-decoration: none;
+                transition: all 0.3s ease;
+            }
+
+            .forgot-link:hover {
+                color: var(--glow-color);
+                text-shadow: 0 0 10px var(--glow-color);
+            }
+
+            .radio-controls {
+                position: absolute;
+                width: 1px;
+                height: 1px;
+                padding: 0;
+                margin: -1px;
+                overflow: hidden;
+                clip: rect(0, 0, 0, 0);
+                white-space: nowrap;
+                border-width: 0;
+            }
+
+            .lamp {
+                display: none;
+                height: 40vmin;
+                overflow: visible !important;
+            }
+
+            .cord {
+                stroke: var(--cord);
+            }
+
+            .cord--rig {
+                display: none;
+            }
+
+            .lamp__tongue {
+                fill: var(--tongue);
+            }
+
+            .lamp__hit {
+                cursor: pointer;
+                opacity: 0;
+            }
+
+            .lamp__feature {
+                fill: var(--feature);
+            }
+
+            .lamp__stroke {
+                stroke: var(--feature);
+            }
+
+            .lamp__mouth,
+            .lamp__light {
+                opacity: var(--on, 0);
+            }
+
+            .shade__opening {
+                fill: var(--opening);
+            }
+
+            .shade__opening-shade {
+                opacity: calc(1 - var(--on, 0));
+            }
+
+            .post__body {
+                fill: var(--post);
+            }
+
+            .base__top {
+                fill: var(--base-top);
+            }
+
+            .base__side {
+                fill: var(--base-side);
+            }
+
+            .top__body {
+                fill: var(--t-3);
+            }
+
+            .auth-brand{display:flex;align-items:center;justify-content:center;gap:12px;margin-bottom:18px}
+            .brand-mark{width:46px;height:46px;border-radius:14px;display:grid;place-items:center;background:linear-gradient(135deg,#0ea5e9,#6366f1);color:#fff;font-size:25px;font-weight:800;box-shadow:0 8px 25px rgba(14,165,233,.22);overflow:hidden}
+            .brand-mark img{width:100%;height:100%;object-fit:cover;border-radius:inherit}
+            .brand-title{color:#fff;font-weight:800;font-size:1.15rem;text-align:right}
+            .brand-subtitle{color:#8f99a5;font-size:.76rem;margin-top:2px;text-align:right}
+            .login-methods{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:0 0 16px;padding:5px;background:#16202b;border:1px solid rgba(255,255,255,.12);border-radius:14px;box-shadow:inset 0 1px 0 rgba(255,255,255,.04)}
+            .login-method{border:0;background:transparent;color:#9aa6b4;border-radius:10px;padding:10px 8px;font-family:var(--font-ar);font-weight:800;cursor:pointer;transition:.2s}
+            .login-method.active{background:linear-gradient(135deg,#0ea5e9,#2563eb);color:#fff;box-shadow:0 5px 14px rgba(14,165,233,.28)}
+            .login-method:hover{background:rgba(14,165,233,.10);color:#7dd3fc}.login-method.active:hover{background:linear-gradient(135deg,#0284c7,#1d4ed8);color:#fff}.login-method i{margin-left:6px}
+            .auth-tabs{display:grid;grid-template-columns:1fr 1fr;gap:6px;padding:5px;background:rgba(255,255,255,.045);border-radius:12px;margin-bottom:20px}
+            .auth-tab,.mode-btn{border:0;background:transparent;color:#929aa5;padding:10px 8px;border-radius:9px;font-weight:700;cursor:pointer;transition:.2s}
+            .auth-tab.active,.mode-btn.active{background:rgba(255,255,255,.09);color:#fff;box-shadow:0 0 12px rgba(255,255,255,.04)}
+            .auth-view{display:none}.auth-view.active{display:block}
+            .login-form h2{margin-bottom:7px}
+            .auth-hint{color:#8e98a4;text-align:center;font-size:.86rem;line-height:1.6;margin:0 0 20px}
+            .password-wrap{position:relative}.password-wrap input{padding-left:76px}
+            .toggle-password{position:absolute;left:8px;top:50%;transform:translateY(-50%);border:0;background:transparent;color:#aaa;cursor:pointer;font-size:.78rem;font-weight:700}
+            .text-btn{display:block;margin:13px auto 0;background:none;border:0;color:#999;cursor:pointer;font-size:.85rem}
+            .text-btn:hover{color:var(--glow-color)}
+                        .auth-message{display:none;margin-top:14px;padding:11px 12px;border-radius:10px;font-size:.82rem;line-height:1.5;text-align:center}
+            .auth-message.show{display:block;background:rgba(255,255,255,.06);color:#ddd;border:1px solid rgba(255,255,255,.1)}
+            .auth-message.success{border-color:rgba(91,214,150,.35);color:#9af0bf}
+            .auth-message.error{border-color:rgba(255,100,100,.35);color:#ffaaaa}
+            .switch-note,.api-note{color:#707985;text-align:center;font-size:.72rem;line-height:1.5;margin-top:13px}
+            .api-note{margin-top:17px;opacity:.7}
+            @media(max-width:600px){.login-form{min-width:0;width:min(94vw,420px);padding:2rem 1.35rem}.brand-subtitle{display:none}}
+
+            html,body{width:100%;max-width:100%;overflow-x:hidden}
+            body{overflow-x:hidden}
+            .container{width:100%;max-width:100%;min-width:0;overflow:visible}
+            .login-form{max-width:440px;width:100%;min-width:0}
+            .lamp{max-width:100%;height:min(40vmin,360px)}
+            @media(max-width:600px){
+                body{min-height:100svh}
+                .container{width:100%;padding:12px;display:flex;flex-direction:column;gap:12px}
+                .lamp{height:180px;width:180px;flex:0 0 auto}
+                .login-form{width:calc(100vw - 24px);max-width:420px;padding:1.35rem 1.05rem}
+            }
+        
+            #pendingNoticeOverlay{position:fixed;inset:0;z-index:100000;display:none;align-items:center;justify-content:center;padding:22px;background:rgba(6,11,18,.78);backdrop-filter:blur(12px)}
+            #pendingNoticeOverlay.show{display:flex;animation:pendingFade .25s ease}
+            .pending-notice-card{width:min(520px,94vw);background:#121921;border:1px solid rgba(224,105,82,.6);border-radius:24px;padding:34px 28px;text-align:center;box-shadow:0 30px 90px rgba(0,0,0,.45),0 0 30px rgba(224,105,82,.14);color:#fff}
+            .pending-notice-icon{width:66px;height:66px;border-radius:50%;display:grid;place-items:center;margin:0 auto 16px;background:rgba(34,197,94,.14);border:1px solid rgba(34,197,94,.4);color:#6ee7a1;font-size:34px;font-weight:900}
+            .pending-notice-card h2{margin:0 0 10px;font-size:26px}
+            .pending-notice-card p{margin:0;color:#c6ced8;line-height:1.95;font-size:16px;white-space:pre-line}
+             .pending-notice-card p::first-line{font-weight:600}
+             .pending-notice-card p{direction:rtl}
+            .pending-notice-card button{margin-top:24px;width:100%;border:0;border-radius:12px;padding:13px;background:linear-gradient(135deg,var(--glow-color),var(--glow-color-dark));color:#fff;font:800 14px system-ui,sans-serif;cursor:pointer}
+            @keyframes pendingFade{from{opacity:0;transform:scale(.97)}to{opacity:1;transform:scale(1)}}
+</style>
+    
+<style id="midad-first-welcome-profile-help">
+.first-welcome-profile-help{display:flex;flex-direction:column;gap:6px;margin:10px 0 2px;padding:12px 14px;border-radius:15px;background:linear-gradient(135deg,var(--surface-alt,#f8fafc),var(--primary-bg,#eff8ff));border:1px solid var(--border,#e2e8f0);color:var(--text,#0f172a);text-align:right;line-height:1.85;font-size:.86rem}
+.first-welcome-profile-help strong{font-size:.9rem;color:var(--primary,#2563eb);font-weight:900}.first-welcome-profile-help span{font-weight:700;color:var(--text-secondary,#64748b)}
+</style>
+
+</head>
+    <body>
+        <form class="radio-controls">
+            <input type="radio" id="on" name="status" value="on" />
+            <label for="on">On</label>
+            <input type="radio" id="off" name="status" value="off" checked />
+            <label for="off">Off</label>
+        </form>
+
+        <div class="container">
+            <svg
+                class="lamp"
+                viewBox="0 0 333 484"
+                fill="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <g class="lamp__shade shade">
+                    <ellipse
+                        class="shade__opening"
+                        cx="165"
+                        cy="220"
+                        rx="130"
+                        ry="20"
+                    />
+                    <ellipse
+                        class="shade__opening-shade"
+                        cx="165"
+                        cy="220"
+                        rx="130"
+                        ry="20"
+                        fill="url(#opening-shade)"
+                    />
+                </g>
+                <g class="lamp__base base">
+                    <path
+                        class="base__side"
+                        d="M165 464c44.183 0 80-8.954 80-20v-14h-22.869c-14.519-3.703-34.752-6-57.131-6-22.379 0-42.612 2.297-57.131 6H85v14c0 11.046 35.817 20 80 20z"
+                    />
+                    <path
+                        d="M165 464c44.183 0 80-8.954 80-20v-14h-22.869c-14.519-3.703-34.752-6-57.131-6-22.379 0-42.612 2.297-57.131 6H85v14c0 11.046 35.817 20 80 20z"
+                        fill="url(#side-shading)"
+                    />
+                    <ellipse
+                        class="base__top"
+                        cx="165"
+                        cy="430"
+                        rx="80"
+                        ry="20"
+                    />
+                    <ellipse
+                        cx="165"
+                        cy="430"
+                        rx="80"
+                        ry="20"
+                        fill="url(#base-shading)"
+                    />
+                </g>
+                <g class="lamp__post post">
+                    <path
+                        class="post__body"
+                        d="M180 142h-30v286c0 3.866 6.716 7 15 7 8.284 0 15-3.134 15-7V142z"
+                    />
+                    <path
+                        d="M180 142h-30v286c0 3.866 6.716 7 15 7 8.284 0 15-3.134 15-7V142z"
+                        fill="url(#post-shading)"
+                    />
+                </g>
+                <g class="lamp__cords cords">
+                    <path
+                        class="cord cord--rig"
+                        d="M124 187.033V347"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                    />
+                    <path
+                        class="cord cord--rig"
+                        d="M124 187.023s17.007 21.921 17.007 34.846c0 12.925-11.338 23.231-17.007 34.846-5.669 11.615-17.007 21.921-17.007 34.846 0 12.925 17.007 34.846 17.007 34.846"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                    />
+                    <path
+                        class="cord cord--rig"
+                        d="M124 187.017s-21.259 17.932-21.259 30.26c0 12.327 14.173 20.173 21.259 30.26 7.086 10.086 21.259 17.933 21.259 30.26 0 12.327-21.259 30.26-21.259 30.26"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                    />
+                    <path
+                        class="cord cord--rig"
+                        d="M124 187s29.763 8.644 29.763 20.735-19.842 13.823-29.763 20.734c-9.921 6.912-29.763 8.644-29.763 20.735S124 269.939 124 269.939"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                    />
+                    <path
+                        class="cord cord--rig"
+                        d="M124 187.029s-10.63 26.199-10.63 39.992c0 13.794 7.087 26.661 10.63 39.992 3.543 13.331 10.63 26.198 10.63 39.992 0 13.793-10.63 39.992-10.63 39.992"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                    />
+                    <path
+                        class="cord cord--rig"
+                        d="M124 187.033V347"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                    />
+                    <line
+                        class="cord cord--dummy"
+                        x1="124"
+                        y2="348"
+                        x2="124"
+                        y1="190"
+                        stroke-width="6"
+                        stroke-linecap="round"
+                    />
+                </g>
+                <path
+                    class="lamp__light"
+                    d="M290.5 193H39L0 463.5c0 11.046 75.478 20 165.5 20s167-11.954 167-23l-42-267.5z"
+                    fill="url(#light)"
+                />
+                <g class="lamp__top top">
+                    <path
+                        class="top__body"
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M164.859 0c55.229 0 100 8.954 100 20l29.859 199.06C291.529 208.451 234.609 200 164.859 200S38.189 208.451 35 219.06L64.859 20c0-11.046 44.772-20 100-20z"
+                    />
+                    <path
+                        class="top__shading"
+                        fill-rule="evenodd"
+                        clip-rule="evenodd"
+                        d="M164.859 0c55.229 0 100 8.954 100 20l29.859 199.06C291.529 208.451 234.609 200 164.859 200S38.189 208.451 35 219.06L64.859 20c0-11.046 44.772-20 100-20z"
+                        fill="url(#top-shading)"
+                    />
+                </g>
+                <g class="lamp__face face">
+                    <g class="lamp__mouth">
+                        <path
+                            d="M165 178c19.882 0 36-16.118 36-36h-72c0 19.882 16.118 36 36 36z"
+                            fill="#141414"
+                        />
+                        <clipPath
+                            class="lamp__feature"
+                            id="mouth"
+                            x="129"
+                            y="142"
+                            width="72"
+                            height="36"
+                        >
+                            <path
+                                d="M165 178c19.882 0 36-16.118 36-36h-72c0 19.882 16.118 36 36 36z"
+                                fill="#141414"
+                            />
+                        </clipPath>
+                        <g clip-path="url(#mouth)">
+                            <circle
+                                class="lamp__tongue"
+                                cx="179.4"
+                                cy="172.6"
+                                r="18"
+                            />
+                        </g>
+                    </g>
+                    <g class="lamp__eyes">
+                        <path
+                            class="lamp__eye lamp__stroke"
+                            d="M115 135c0-5.523-5.82-10-13-10s-13 4.477-13 10"
+                            stroke-width="4"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                        <path
+                            class="lamp__eye lamp__stroke"
+                            d="M241 135c0-5.523-5.82-10-13-10s-13 4.477-13 10"
+                            stroke-width="4"
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                        />
+                    </g>
+                </g>
+                <defs>
+                    <linearGradient
+                        id="opening-shade"
+                        x1="35"
+                        y1="220"
+                        x2="295"
+                        y2="220"
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <stop />
+                        <stop
+                            offset="1"
+                            stop-color="var(--shade)"
+                            stop-opacity="0"
+                        />
+                    </linearGradient>
+                    <linearGradient
+                        id="base-shading"
+                        x1="85"
+                        y1="444"
+                        x2="245"
+                        y2="444"
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <stop stop-color="var(--b-1)" />
+                        <stop
+                            offset="0.8"
+                            stop-color="var(--b-2)"
+                            stop-opacity="0"
+                        />
+                    </linearGradient>
+                    <linearGradient
+                        id="side-shading"
+                        x1="119"
+                        y1="430"
+                        x2="245"
+                        y2="430"
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <stop stop-color="var(--b-3)" />
+                        <stop
+                            offset="1"
+                            stop-color="var(--b-4)"
+                            stop-opacity="0"
+                        />
+                    </linearGradient>
+                    <linearGradient
+                        id="post-shading"
+                        x1="150"
+                        y1="288"
+                        x2="180"
+                        y2="288"
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <stop stop-color="var(--b-1)" />
+                        <stop
+                            offset="1"
+                            stop-color="var(--b-2)"
+                            stop-opacity="0"
+                        />
+                    </linearGradient>
+                    <linearGradient
+                        id="light"
+                        x1="165.5"
+                        y1="218.5"
+                        x2="165.5"
+                        y2="483.5"
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <stop stop-color="var(--l-1)" stop-opacity=".2" />
+                        <stop
+                            offset="1"
+                            stop-color="var(--l-2)"
+                            stop-opacity="0"
+                        />
+                    </linearGradient>
+                    <linearGradient
+                        id="top-shading"
+                        x1="56"
+                        y1="110"
+                        x2="295"
+                        y2="110"
+                        gradientUnits="userSpaceOnUse"
+                    >
+                        <stop stop-color="var(--t-1)" stop-opacity=".8" />
+                        <stop
+                            offset="1"
+                            stop-color="var(--t-2)"
+                            stop-opacity="0"
+                        />
+                    </linearGradient>
+                </defs>
+                <circle
+                    class="lamp__hit"
+                    cx="124"
+                    cy="347"
+                    r="66"
+                    fill="#C4C4C4"
+                    fill-opacity=".1"
+                />
+            </svg>
+
+            <div class="login-form" id="authCard" dir="rtl">
+                <div class="auth-brand">
+                    <div class="brand-mark"><img src="1.png" alt="م" onerror="this.style.display='none';this.parentElement.textContent='م';"></div>
+                    <div>
+                        <div class="brand-title"></div>
+                        <div class="brand-subtitle"></div>
+                    </div>
+                </div>
+
+                <div class="auth-tabs">
+                    <button class="auth-tab active" id="loginTab" type="button">تسجيل الدخول</button>
+                    <button class="auth-tab" id="registerTab" type="button">إنشاء حساب</button>
+                </div>
+
+                <!-- تسجيل الدخول: نفس المكان للحساب العادي والحساب المؤقت -->
+                <section id="loginView" class="auth-view active">
+                    <h2 id="loginTitle">تسجيل الدخول</h2>
+                    <p class="auth-hint" id="loginHint">أدخل بيانات حسابك للدخول إلى المنصة.</p>
+
+                    <div class="login-methods" role="tablist" aria-label="طريقة تسجيل الدخول">
+                        <button type="button" class="login-method active" id="loginEmailMethod" data-login-mode="email"><i class="fas fa-envelope"></i> الإيميل</button>
+                        <button type="button" class="login-method" id="loginPhoneMethod" data-login-mode="phone"><i class="fas fa-phone"></i> رقم التليفون</button>
+                    </div>
+
+                    <form id="loginForm" novalidate>
+                        <div class="form-group">
+                            <label for="loginIdentifier" id="loginIdentifierLabel">الإيميل</label>
+                            <input type="text" id="loginIdentifier" autocomplete="username"
+                                   placeholder="أدخل الإيميل أو رقم التليفون" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="loginPassword">كلمة السر</label>
+                            <div class="password-wrap">
+                                <input type="password" id="loginPassword" autocomplete="current-password"
+                                       placeholder="أدخل كلمة السر" required>
+                                <button type="button" class="toggle-password" data-target="loginPassword">إظهار</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="login-btn" id="loginSubmit">تسجيل الدخول</button>
+                    </form>
+                </section>
+
+                <!-- إجبار تغيير كلمة السر للحساب العادي -->
+                <section id="forcePasswordView" class="auth-view">
+                    <h2>تغيير كلمة السر مطلوب</h2>
+                    <p class="auth-hint">طلبت إدارة المنصة تغيير كلمة السر. أدخل كلمة سر جديدة وأكدها للمتابعة.</p>
+                    <form id="forcePasswordForm" novalidate>
+                        <div class="form-group"><label for="forcedNewPassword">كلمة السر الجديدة</label><div class="password-wrap"><input type="password" id="forcedNewPassword" autocomplete="new-password" minlength="6" required placeholder="أدخل كلمة السر الجديدة"><button type="button" class="toggle-password" data-target="forcedNewPassword">إظهار</button></div></div>
+                        <div class="form-group"><label for="forcedConfirmPassword">تأكيد كلمة السر الجديدة</label><div class="password-wrap"><input type="password" id="forcedConfirmPassword" autocomplete="new-password" minlength="6" required placeholder="أعد كتابة كلمة السر الجديدة"><button type="button" class="toggle-password" data-target="forcedConfirmPassword">إظهار</button></div></div>
+                        <button type="submit" class="login-btn">حفظ والمتابعة</button>
+                    </form>
+                </section>
+
+                <!-- لو الحساب مؤقت: تظهر هذه البيانات بعد نجاح تسجيل الدخول المؤقت -->
+                <section id="temporaryView" class="auth-view">
+                    <h2>استكمال الحساب المؤقت</h2>
+                    <p class="auth-hint">
+                        تم تسجيل الدخول بالحساب المؤقت. غيّر البريد وكلمة السر وأدخل اسمك ورقم التليفون.
+                    </p>
+
+                    <form id="temporaryForm" novalidate>
+                        <div class="form-group">
+                            <label for="temporaryNewEmail">البريد الجديد</label>
+                            <input type="email" id="temporaryNewEmail" autocomplete="email"
+                                   placeholder="أدخل البريد الجديد" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="temporaryName">الاسم</label>
+                            <input type="text" id="temporaryName" autocomplete="name"
+                                   placeholder="أدخل اسمك" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="temporaryPhone">رقم التليفون</label>
+                            <input type="tel" id="temporaryPhone" autocomplete="tel"
+                                   placeholder="أدخل رقم تليفونك" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="temporaryNewPassword">كلمة السر الجديدة</label>
+                            <div class="password-wrap">
+                                <input type="password" id="temporaryNewPassword" autocomplete="new-password"
+                                       placeholder="أدخل كلمة السر الجديدة" minlength="6" required>
+                                <button type="button" class="toggle-password" data-target="temporaryNewPassword">إظهار</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="temporaryConfirmPassword">تأكيد كلمة السر الجديدة</label>
+                            <div class="password-wrap">
+                                <input type="password" id="temporaryConfirmPassword" autocomplete="new-password"
+                                       placeholder="أعد كتابة كلمة السر الجديدة" minlength="6" required>
+                                <button type="button" class="toggle-password" data-target="temporaryConfirmPassword">إظهار</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="login-btn">إرسال وانتظار موافقة الإدارة</button>
+                    </form>
+                </section>
+
+                <!-- إنشاء الحساب: لا يوجد هنا أي اختيار للحساب المؤقت -->
+                <section id="registerView" class="auth-view">
+                    <h2>إنشاء حساب</h2>
+                    <p class="auth-hint">أدخل بياناتك. البريد الإلكتروني وكلمة السر اللذان تختارهما هما بيانات تسجيل الدخول لحسابك.</p>
+
+                    <form id="registerForm" novalidate>
+                        <div class="form-group">
+                            <label for="regName">الاسم</label>
+                            <input type="text" id="regName" autocomplete="name"
+                                   placeholder="أدخل اسمك" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regPhone">رقم التليفون</label>
+                            <input type="tel" id="regPhone" autocomplete="tel"
+                                   placeholder="أدخل رقم تليفونك" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regEmail">الإيميل</label>
+                            <input type="email" id="regEmail" autocomplete="email"
+                                   placeholder="أدخل الإيميل" required>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regPassword">كلمة السر</label>
+                            <div class="password-wrap">
+                                <input type="password" id="regPassword" autocomplete="new-password"
+                                       placeholder="أنشئ كلمة السر" minlength="6" required>
+                                <button type="button" class="toggle-password" data-target="regPassword">إظهار</button>
+                            </div>
+                        </div>
+
+                        <div class="form-group">
+                            <label for="regPasswordConfirm">تأكيد كلمة السر</label>
+                            <div class="password-wrap">
+                                <input type="password" id="regPasswordConfirm" autocomplete="new-password"
+                                       placeholder="أعد كتابة كلمة السر" minlength="6" required>
+                                <button type="button" class="toggle-password" data-target="regPasswordConfirm">إظهار</button>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="login-btn">إرسال طلب إنشاء الحساب</button>
+                    </form>
+
+                    <div class="switch-note">بعد إرسال الطلب، انتظر موافقة الإدارة قبل تسجيل الدخول.</div>
+                </section>
+
+                <div id="authMessage" class="auth-message" role="alert" aria-live="polite"></div>
+                <div class="api-note"></div>
+            </div>
+        </div>
+
+        <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/gsap.min.js"></script>
+        <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+        <script src="https://cdn.jsdelivr.net/npm/gsap@3/dist/Draggable.min.js"></script>
+        <script>
+            const {
+                gsap,
+                gsap: { set, to, timeline },
+                Draggable,
+            } = window;
+
+            const AUDIO = { CLICK: new Audio() };
+            const ON = document.querySelector("#on");
+            const OFF = document.querySelector("#off");
+            const LOGIN_FORM = document.querySelector(".login-form");
+            document.documentElement.style.setProperty("--on","0");
+            LOGIN_FORM.classList.remove("active");
+            LOGIN_FORM.setAttribute('aria-hidden','true');
+
+            const PROXY = document.createElement("div");
+            const CORDS = gsap.utils.toArray(".cords path");
+            const CORD_DURATION = 0.1;
+            const HIT = document.querySelector(".lamp__hit");
+            const DUMMY_CORD = document.querySelector(".cord--dummy");
+            const ENDX = DUMMY_CORD.getAttribute("x2");
+            const ENDY = DUMMY_CORD.getAttribute("y2");
+            const RESET = () => set(PROXY,{x:ENDX,y:ENDY});
+            RESET();
+
+            let startX,startY;
+            const STATE={ON:false};
+            gsap.set([".cords",HIT],{x:-10});
+            gsap.set(".lamp__eye",{rotate:180,transformOrigin:"50% 50%",yPercent:50});
+
+            const CORD_TL=timeline({
+                paused:true,
+                onStart:()=>{
+                    STATE.ON=!STATE.ON;
+                    set(document.documentElement,{"--on":STATE.ON?1:0});
+                    const hue=gsap.utils.random(0,359);
+                    set(document.documentElement,{"--shade-hue":hue});
+                    set(document.documentElement,{"--glow-color":`hsl(${hue},40%,45%)`,"--glow-color-dark":`hsl(${hue},40%,35%)`});
+                    set(".lamp__eye",{rotate:STATE.ON?0:180});
+                    set([DUMMY_CORD,HIT],{display:"none"});
+                    set(CORDS[0],{display:"block"});
+                    AUDIO.CLICK.play().catch(()=>{});
+                    LOGIN_FORM.classList.remove("active");
+                    if(STATE.ON){
+                        ON.setAttribute("checked",true);OFF.removeAttribute("checked");
+                        void handleLampActivated();
+                    } else {
+                        ON.removeAttribute("checked");OFF.setAttribute("checked",true);
+                    }
+                },
+                onComplete:()=>{set([DUMMY_CORD,HIT],{display:"block"});set(CORDS[0],{display:"none"});RESET();}
+            });
+            for(let i=1;i<CORDS.length;i++) CORD_TL.add(to(CORDS[0],{opacity:i%2?0.72:1,duration:CORD_DURATION,repeat:1,yoyo:true}));
+
+            Draggable.create(PROXY,{
+                trigger:HIT,type:"x,y",
+                onPress:e=>{startX=e.x;startY=e.y;},
+                onDrag(){set(DUMMY_CORD,{attr:{x2:this.x,y2:Math.max(400,this.y)}});},
+                onRelease(e){
+                    const dx=Math.abs(e.x-startX),dy=Math.abs(e.y-startY);
+                    const travelled=Math.sqrt(dx*dx+dy*dy);
+                    to(DUMMY_CORD,{attr:{x2:ENDX,y2:ENDY},duration:CORD_DURATION,onComplete:()=>travelled>50?CORD_TL.restart():RESET()});
+                }
+            });
+
+            const loginTab=document.querySelector("#loginTab");
+            const registerTab=document.querySelector("#registerTab");
+            const loginView=document.querySelector("#loginView");
+            const temporaryView=document.querySelector("#temporaryView");
+            const forcePasswordView=document.querySelector("#forcePasswordView");
+            const registerView=document.querySelector("#registerView");
+            const authMessage=document.querySelector("#authMessage");
+
+            function showView(view){
+                [loginView,temporaryView,forcePasswordView,registerView].forEach(v=>v.classList.remove("active"));
+                view.classList.add("active");
+                loginTab.classList.toggle("active",view===loginView||view===temporaryView);
+                registerTab.classList.toggle("active",view===registerView);
+                clearMessage();
+            }
+            function message(text,type=""){
+                authMessage.innerHTML=text;
+                authMessage.className="auth-message show "+type;
+            }
+
+            function showPendingNotice(title='في انتظار الموافقة', text='تم إرسال طلبك بنجاح. طلبك الآن قيد المراجعة من الإدارة. بعد الموافقة يمكنك تسجيل الدخول ببياناتك الجديدة.'){
+                let overlay=document.getElementById('pendingNoticeOverlay');
+                if(!overlay){
+                    overlay=document.createElement('div');
+                    overlay.id='pendingNoticeOverlay';
+                    overlay.innerHTML=`<div class="pending-notice-card" dir="rtl">
+                        <div class="pending-notice-icon">✓</div>
+                        <h2 id="pendingNoticeTitle"></h2>
+                        <p id="pendingNoticeText"></p>
+                        <button type="button" id="pendingNoticeLogin">العودة لتسجيل الدخول</button>
+                    </div>`;
+                    document.body.appendChild(overlay);
+                    overlay.querySelector('#pendingNoticeLogin').onclick=()=>{ overlay.remove(); showView(loginView); };
+                }
+                overlay.querySelector('#pendingNoticeTitle').textContent=title;
+                overlay.querySelector('#pendingNoticeText').textContent=text;
+                overlay.classList.add('show');
+            }
+
+            function friendlyAuthError(err, fallback='حدث خطأ أثناء العملية.'){
+                const msg=String(err?.message||err||'').toLowerCase();
+                if(msg.includes('rate limit') || msg.includes('rate_limit') || msg.includes('too many requests'))
+                    return 'تم تجاوز الحد المسموح للمحاولات مؤقتًا. انتظر قليلًا ثم حاول مرة أخرى.';
+                if(msg.includes('already registered') || msg.includes('user already registered') || msg.includes('already exists'))
+                    return 'البريد الإلكتروني مستخدم بالفعل. استخدم بريدًا آخر.';
+                if(msg.includes('invalid email')) return 'البريد الإلكتروني غير صحيح.';
+                if(msg.includes('password')) return 'كلمة السر غير صالحة. تأكد أنها مكوّنة من 6 أحرف على الأقل.';
+                if(msg.includes('network') || msg.includes('fetch')) return 'تعذر الاتصال بالخادم. تأكد من الإنترنت وحاول مرة أخرى.';
+                if(msg.includes('email not confirmed')) return 'يجب تأكيد البريد الإلكتروني أولًا ثم تسجيل الدخول.';
+                return fallback;
+            }
+            function clearMessage(){
+                authMessage.textContent="";
+                authMessage.className="auth-message";
+            }
+
+            loginTab.onclick=()=>showView(loginView);
+            registerTab.onclick=()=>showView(registerView);
+
+            document.querySelectorAll(".toggle-password").forEach(btn=>btn.addEventListener("click",()=>{
+                const input=document.getElementById(btn.dataset.target);
+                input.type=input.type==="password"?"text":"password";
+                btn.textContent=input.type==="password"?"إظهار":"إخفاء";
+            }));
+
+            // ═══════════════════════════════════════════════════════════════
+            // SUPABASE AUTH
+            // ═══════════════════════════════════════════════════════════════
+            const SUPABASE_URL = "https://clobfjrjhdysmqhbwzlc.supabase.co";
+            const SUPABASE_KEY = "sb_publishable_LEFYVl0Y8VOnMIbBZev1Vg_0pYSMWpv";
+            const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY, {
+                auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: true, flowType: 'pkce' }
+            });
+
+            async function showStartupLogin(){
+                LOGIN_FORM.classList.add("active");
+                LOGIN_FORM.setAttribute('aria-hidden','false');
+                showView(loginView);
+            }
+
+            async function routeToStartupGuard(){
+                try {
+                    sessionStorage.setItem('midad_startup_guard_reason', startupSessionError?.message || 'NO_SESSION');
+                } catch (_) {}
+                location.replace('app/index.html?startupGuard=1');
+            }
+
+            async function handleLampActivated(){
+                try {
+                    // Prefer the already-running silent probe so the user sees no
+                    // intermediate login screen on a returning session.
+                    let session = startupSessionState === 'loading'
+                        ? await startupSessionPromise
+                        : startupSessionData;
+
+                    if (startupSessionState === 'error') {
+                        await routeToStartupGuard();
+                        return;
+                    }
+
+                    if (!session?.user) {
+                        await showStartupLogin();
+                        return;
+                    }
+
+                    await handleLoggedInUser(session.user);
+                } catch (e) {
+                    startupSessionError = e;
+                    await routeToStartupGuard();
+                }
+            }
+
+            // App startup gate: probe the existing Supabase session silently while
+            // the interactive lamp is waiting. A valid session never exposes the
+            // login card; a real missing session reveals it only after the lamp is on.
+            let startupSessionState = 'loading';
+            let startupSessionData = null;
+            let startupSessionError = null;
+            const STARTUP_SESSION_TIMEOUT_MS = 6500;
+
+            async function probeStartupSession(){
+                let timer = null;
+                try {
+                    const result = await Promise.race([
+                        sb.auth.getSession(),
+                        new Promise((_, reject) => { timer = setTimeout(() => reject(new Error('SESSION_BOOT_TIMEOUT')), STARTUP_SESSION_TIMEOUT_MS); })
+                    ]);
+                    if (timer) clearTimeout(timer);
+                    startupSessionData = result?.data?.session || null;
+                    startupSessionState = 'ready';
+                    return startupSessionData;
+                } catch (e) {
+                    if (timer) clearTimeout(timer);
+                    startupSessionError = e;
+                    startupSessionState = 'error';
+                    return null;
+                }
+            }
+            const startupSessionPromise = probeStartupSession();
+
+            function normalizePhone(phone){
+                return phone.replace(/\s+/g,'').replace(/-/g,'');
+            }
+
+            async function getProfile(userId){
+                const { data, error } = await sb.from('profiles').select('*').eq('id', userId).maybeSingle();
+                if(error) throw error;
+                return data;
+            }
+
+            async function getProfileByPhone(phone){
+                const normalized = normalizePhone(phone);
+                const { data, error } = await sb.from('profiles').select('id,email,phone,phone_number,role,status,must_change_password,must_change_credentials,account_type,account_origin,full_name,name').or(`phone.eq.${normalized},phone_number.eq.${normalized}`).maybeSingle();
+                if(error) throw error;
+                return data;
+            }
+
+            function roleOf(profile){
+                return profile?.role === 'admin' ? 'admin' : 'member';
+            }
+
+            function isTemporaryProfile(profile){
+                return profile?.account_type === 'temporary' || profile?.is_temporary === true || ['admin_temp','restored_temp'].includes(profile?.account_origin);
+            }
+
+            function openContent(profile){
+                const user = {
+                    name: profile?.full_name || profile?.name || 'عضو',
+                    email: profile?.email || '',
+                    phone: profile?.phone_number || profile?.phone || '',
+                    role: roleOf(profile),
+                    account_type: profile?.account_type || 'normal',
+                    status: profile?.status || 'approved'
+                };
+                sessionStorage.setItem('mohadarat_user', JSON.stringify(user));
+                sessionStorage.setItem('mohadarat_role', user.role);
+                location.replace('2.html?v=11');
+            }
+
+            async function showForcedPasswordChange(){
+                document.querySelector('#forcedNewPassword').value='';
+                document.querySelector('#forcedConfirmPassword').value='';
+                showView(forcePasswordView);
+                message('تغيير كلمة السر مطلوب قبل الدخول إلى المنصة.','error');
+            }
+
+            async function getLatestRejectedNote(userId){
+                try{const {data}=await sb.from('account_requests').select('note').eq('user_id',userId).eq('status','rejected').order('created_at',{ascending:false}).limit(1).maybeSingle();return data?.note||'';}catch(_){return '';}
+            }
+
+            async function handleLoggedInUser(authUser){
+                let profile = await getProfile(authUser.id);
+                if(!profile){
+                    // لو التريجر أنشأ الـ auth فقط ولم ينشئ profile، نحاول إنشاءه.
+                    const { data, error } = await sb.from('profiles').insert({
+                        id: authUser.id,
+                        email: authUser.email || null,
+                        role: 'user',
+                        status: 'approved',
+                        must_change_password: true,
+                        must_change_credentials: true,
+                        account_type: 'normal',
+                        account_origin: 'signup',
+                        is_temporary: false
+                    }).select('*').single();
+                    if(error) throw error;
+                    profile = data;
+                }
+
+                // الدور الحقيقي يأتي من profiles فقط. الأدمن لا يخضع لأي حالة مؤقتة/معلقة.
+                const admin = profile.role === 'admin';
+
+                if(!admin && profile.status === 'revoked'){
+                    const note=await getLatestRejectedNote(profile.id);
+                    const rejectText = note ? `تم رفض أو إيقاف الحساب.\n\nسبب الرفض\n${note}` : 'تم رفض أو إيقاف الحساب. تواصل مع الإدارة.';
+                    return showPendingNotice('الحساب موقوف', rejectText);
+                }
+
+                // الحساب المؤقت يمر بمرحلة استكمال واحدة فقط.
+                // بعد إرسال البيانات يصبح طلب temporary_completion هو المرجع للحالة:
+                // pending = انتظر المراجعة، approved = ادخل طبيعي، rejected = اعرض الرفض.
+                if(!admin && (profile.account_type === 'temporary' || profile.is_temporary === true || profile.must_change_credentials === true)){
+                    let tempRequest = null;
+                    try{
+                        const {data:req}=await sb.from('account_requests')
+                            .select('status,note,created_at')
+                            .eq('user_id',authUser.id)
+                            .eq('request_type','temporary_completion')
+                            .order('created_at',{ascending:false})
+                            .limit(1)
+                            .maybeSingle();
+                        tempRequest = req || null;
+                    }catch(_){ tempRequest = null; }
+
+                    // لم يبدأ استكمال الحساب بعد: افتح نموذج الحساب المؤقت.
+                    if(!tempRequest){
+                        openTemporaryCompletion(profile);
+                        return;
+                    }
+
+                    // تم إرسال بيانات الاستكمال وما زال الطلب قيد المراجعة.
+                    if(tempRequest.status === 'pending'){
+                        return showPendingNotice('في انتظار الموافقة','تم إرسال بيانات الحساب بنجاح. انتظر مراجعة الإدارة ثم سجّل الدخول ببياناتك الجديدة.');
+                    }
+
+                    // تم رفض طلب الاستكمال.
+                    if(tempRequest.status === 'rejected'){
+                        const reason=String(tempRequest.note||'').trim();
+                        return showPendingNotice('تم رفض الطلب', reason ? `سبب الرفض\n${reason}` : 'تم رفض طلب استكمال الحساب. تواصل مع الإدارة.');
+                    }
+
+                    // approved: لا نفتح استكمال الحساب مرة أخرى؛ نكمل الدخول الطبيعي.
+                }
+
+                if(!admin && profile.status === 'pending'){
+                    return showPendingNotice('في انتظار الموافقة','حسابك في انتظار مراجعة الإدارة. سيتم السماح لك بالدخول بعد الموافقة.');
+                }
+
+                if(!admin && profile.must_change_password){
+                    showForcedPasswordChange();
+                    return;
+                }
+
+                message(admin ? 'تم تسجيل دخول الأدمن. جاري فتح لوحة الإدارة…' : 'تم تسجيل الدخول بنجاح. جاري فتح المنصة…','success');
+                openContent(profile);
+            }
+
+            function openTemporaryCompletion(profile){
+                sessionStorage.setItem('mohadarat_temporary_user_id', profile.id);
+                sessionStorage.setItem('mohadarat_temporary_email', profile.email || '');
+                document.querySelector('#temporaryNewEmail').value='';
+                document.querySelector('#temporaryName').value=profile.full_name || profile.name || '';
+                document.querySelector('#temporaryPhone').value=profile.phone_number || profile.phone || '';
+                document.querySelector('#temporaryNewPassword').value='';
+                document.querySelector('#temporaryConfirmPassword').value='';
+                showView(temporaryView);
+                message('تم التعرف على الحساب المؤقت. أكمل بياناتك الجديدة ثم انتظر موافقة الإدارة.','success');
+            }
+
+            async function signInWithIdentifier(identifier,password){
+                // Email login
+                if(identifier.includes('@')){
+                    return await sb.auth.signInWithPassword({ email: identifier, password });
+                }
+
+                // Phone login: نستخدم RPC آمنة لأن profiles محمية بـ RLS قبل تسجيل الدخول.
+                const {data:email,error:resolveError}=await sb.rpc('resolve_phone_login',{p_phone:identifier});
+                if(resolveError) throw resolveError;
+                if(!email) return { data:{user:null,session:null}, error:new Error('لم يتم العثور على حساب بهذا الرقم.') };
+                return await sb.auth.signInWithPassword({ email, password });
+            }
+
+            let loginMode = 'email';
+            const loginEmailMethod = document.getElementById('loginEmailMethod');
+            const loginPhoneMethod = document.getElementById('loginPhoneMethod');
+            const loginIdentifierLabel = document.getElementById('loginIdentifierLabel');
+            const loginIdentifierInput = document.getElementById('loginIdentifier');
+            function setLoginMode(mode){
+                loginMode = mode === 'phone' ? 'phone' : 'email';
+                loginEmailMethod?.classList.toggle('active', loginMode==='email');
+                loginPhoneMethod?.classList.toggle('active', loginMode==='phone');
+                if(loginIdentifierLabel) loginIdentifierLabel.textContent = loginMode==='phone' ? 'رقم التليفون' : 'الإيميل';
+                if(loginIdentifierInput){
+                    loginIdentifierInput.type = loginMode==='phone' ? 'tel' : 'email';
+                    loginIdentifierInput.inputMode = loginMode==='phone' ? 'tel' : 'email';
+                    loginIdentifierInput.autocomplete = loginMode==='phone' ? 'tel' : 'username';
+                    loginIdentifierInput.placeholder = loginMode==='phone' ? '01xxxxxxxxx' : 'example@email.com';
+                }
+            }
+            loginEmailMethod?.addEventListener('click',()=>setLoginMode('email'));
+            loginPhoneMethod?.addEventListener('click',()=>setLoginMode('phone'));
+            setLoginMode('email');
+
+            document.querySelector('#loginForm').addEventListener('submit', async e=>{
+                e.preventDefault();
+                clearMessage();
+                const submit = document.querySelector('#loginSubmit');
+                const rawIdentifier=document.querySelector('#loginIdentifier').value.trim();
+                const identifier = loginMode==='phone' ? normalizePhone(rawIdentifier) : rawIdentifier.toLowerCase();
+                const password=document.querySelector('#loginPassword').value;
+
+                if(!identifier||!password)
+                    return message('من فضلك أدخل الإيميل أو رقم التليفون وكلمة السر.','error');
+
+                submit.disabled=true;
+                submit.textContent='جاري تسجيل الدخول…';
+                try{
+                    const { data, error } = await signInWithIdentifier(identifier,password);
+                    if(error) throw error;
+                    if(!data?.user) throw new Error('بيانات الدخول غير صحيحة.');
+                    void sb.rpc('record_user_login').then(()=>{},()=>{});
+                    await handleLoggedInUser(data.user);
+                }catch(err){
+                    const msg = err?.message || '';
+                    if(msg.includes('Invalid login credentials'))
+                        message('بيانات الدخول غير صحيحة.','error');
+                    else if(msg.includes('row-level security') || msg.includes('permission'))
+                        message('لا يمكن الوصول لبيانات الحساب حاليًا. راجع سياسات RLS لجدول profiles.','error');
+                    else
+                        message(msg || 'حدث خطأ أثناء تسجيل الدخول.','error');
+                }finally{
+                    submit.disabled=false;
+                    submit.textContent='تسجيل الدخول';
+                }
+            });
+
+            document.querySelector('#forcePasswordForm').addEventListener('submit', async e=>{
+                e.preventDefault(); clearMessage();
+                const password=document.querySelector('#forcedNewPassword').value;
+                const confirm=document.querySelector('#forcedConfirmPassword').value;
+                if(password.length<6) return message('كلمة السر يجب ألا تقل عن 6 أحرف.','error');
+                if(password!==confirm) return message('كلمتا السر غير متطابقتين.','error');
+                const btn=e.target.querySelector('button[type=submit]'); btn.disabled=true; btn.textContent='جاري الحفظ…';
+                try{
+                    const {data:{user}}=await sb.auth.getUser(); if(!user) throw new Error('انتهت جلسة الدخول.');
+                    const {error}=await sb.auth.updateUser({password}); if(error) throw error;
+                    const {error:rpcError}=await sb.rpc('finish_my_password_change'); if(rpcError) throw rpcError;
+                    const profile=await getProfile(user.id); if(!profile) throw new Error('تعذر تحميل بيانات الحساب.');
+                    message('تم تغيير كلمة السر بنجاح. جاري فتح المنصة…','success');
+                    setTimeout(()=>openContent(profile),350);
+                }catch(err){message(err?.message||'تعذر تغيير كلمة السر.','error');}
+                finally{btn.disabled=false;btn.textContent='حفظ والمتابعة';}
+            });
+
+            document.querySelector('#temporaryForm').addEventListener('submit', async e=>{
+                e.preventDefault();
+                clearMessage();
+
+                const newEmail=document.querySelector('#temporaryNewEmail').value.trim().toLowerCase();
+                const name=document.querySelector('#temporaryName').value.trim();
+                const phone=normalizePhone(document.querySelector('#temporaryPhone').value.trim());
+                const password=document.querySelector('#temporaryNewPassword').value;
+                const confirm=document.querySelector('#temporaryConfirmPassword').value;
+                const userId=sessionStorage.getItem('mohadarat_temporary_user_id');
+
+                if(!newEmail||!name||!phone||!password||!confirm)
+                    return message('من فضلك أكمل كل البيانات المطلوبة.','error');
+                if(password.length<6)
+                    return message('كلمة السر يجب ألا تقل عن 6 أحرف.','error');
+                if(password!==confirm)
+                    return message('كلمتا السر غير متطابقتين.','error');
+                if(!userId)
+                    return message('انتهت جلسة الحساب المؤقت. سجل الدخول بالحساب المؤقت مرة أخرى.','error');
+
+                const btn=e.target.querySelector('button[type="submit"]');
+                btn.disabled=true;
+                btn.textContent='جاري حفظ البيانات…';
+
+                try{
+                    // لا نستخدم auth.updateUser هنا إطلاقًا؛ هذه العملية قد تستدعي
+                    // خدمات البريد في إعدادات Supabase وتسبب خطأ تجاوز حد الإرسال.
+                    // تحديث البريد + كلمة السر + البيانات يتم بالكامل داخل RPC آمنة على الخادم.
+                    const {error:finishError}=await sb.rpc('finish_my_temporary_account',{
+                        p_new_email:newEmail,
+                        p_name:name,
+                        p_phone:phone,
+                        p_new_password:password
+                    });
+                    if(finishError) throw finishError;
+
+                    await sb.auth.signOut();
+                    sessionStorage.removeItem('mohadarat_temporary_user_id');
+                    sessionStorage.removeItem('mohadarat_temporary_email');
+
+                    e.target.reset();
+                    showPendingNotice('تم إرسال طلبك', 'تم حفظ بيانات الحساب وإرسال طلبك للمراجعة.\n\nالبريد المستخدم لتسجيل الدخول: '+newEmail+'\nكلمة السر: كلمة السر الجديدة التي اخترتها.\n\nانتظر مراجعة الإدارة قبل محاولة الدخول.');
+                }catch(err){
+                    const raw=String(err?.message||'');
+                    if(raw.toLowerCase().includes('email already in use') || raw.toLowerCase().includes('email_exists'))
+                        message('البريد الجديد مستخدم بالفعل. اختار بريدًا آخر.','error');
+                    else if(raw.toLowerCase().includes('finish_my_temporary_account'))
+                        message('يلزم تشغيل تحديث قاعدة البيانات المرفق مع النسخة الجديدة ثم المحاولة مرة أخرى.','error');
+                    else
+                        message(friendlyAuthError(err,'حدث خطأ أثناء استكمال الحساب. حاول مرة أخرى.'),'error');
+                }finally{
+                    btn.disabled=false;
+                    btn.textContent='إرسال وانتظار موافقة الإدارة';
+                }
+            });
+
+            document.querySelector('#registerForm').addEventListener('submit', async e=>{
+                e.preventDefault();
+                clearMessage();
+
+                const name=document.querySelector('#regName').value.trim();
+                const phone=normalizePhone(document.querySelector('#regPhone').value.trim());
+                const email=document.querySelector('#regEmail').value.trim().toLowerCase();
+                const password=document.querySelector('#regPassword').value;
+                const confirm=document.querySelector('#regPasswordConfirm').value;
+
+                if(!name||!phone||!email||!password||!confirm)
+                    return message('من فضلك أكمل كل البيانات المطلوبة.','error');
+                if(password.length<6)
+                    return message('كلمة السر يجب ألا تقل عن 6 أحرف.','error');
+                if(password!==confirm)
+                    return message('كلمتا السر غير متطابقتين.','error');
+
+                const btn=e.target.querySelector('button[type="submit"]');
+                btn.disabled=true;
+                btn.textContent='جاري إنشاء الحساب…';
+
+                try{
+                    // إنشاء الحساب يتم من خلال Edge Function على الخادم، وليس auth.signUp،
+                    // حتى لا نستخدم خدمة إرسال البريد في Supabase أثناء التسجيل.
+                    const {data, error}=await sb.functions.invoke('public-account-registration',{
+                        body:{name, phone, email, password}
+                    });
+                    if(error) throw error;
+                    if(!data?.ok){
+                        const code=String(data?.code||'');
+                        if(code==='EMAIL_EXISTS') throw new Error('البريد الإلكتروني مستخدم بالفعل.');
+                        if(code==='PHONE_EXISTS') throw new Error('رقم التليفون مستخدم بالفعل.');
+                        if(code==='RATE_LIMIT') throw new Error('تم تقييد المحاولات مؤقتًا. انتظر قليلًا ثم حاول مرة أخرى.');
+                        throw new Error(data?.message||'تعذر إنشاء الحساب. حاول مرة أخرى.');
+                    }
+
+                    e.target.reset();
+                    showPendingNotice('تم إرسال طلبك', 'تم إنشاء الحساب وإرسال طلبك للمراجعة.\n\nالبريد الإلكتروني وكلمة السر اللذان أنشأتهما هما بيانات تسجيل الدخول الخاصة بك.\n\nانتظر مراجعة الإدارة قبل الدخول.');
+                }catch(err){
+                    message(friendlyAuthError(err,'حدث خطأ أثناء إنشاء الحساب. حاول مرة أخرى.'),'error');
+                }finally{
+                    btn.disabled=false;
+                    btn.textContent='إرسال طلب إنشاء الحساب';
+                }
+            });
+            // Startup session is checked silently; login is revealed only after
+            // the interactive lamp completes and only when there is truly no session.
+            sb.auth.onAuthStateChange((event, session)=>{
+                if (event === 'SIGNED_IN' && session?.user && STATE.ON) {
+                    startupSessionData = session;
+                    startupSessionState = 'ready';
+                }
+
+                if(event==='SIGNED_OUT'){
+                    const id=document.getElementById('loginIdentifier'), pw=document.getElementById('loginPassword');
+                    if(id) id.value=''; if(pw) pw.value='';
+                }
+            });
+
+            gsap.set(".lamp",{display:"block"});
+        </script>
+    </body>
+</html>

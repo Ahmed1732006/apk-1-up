@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "314586685170",
+    "project_id": "in-the-void-aebd7",
+    "storage_bucket": "in-the-void-aebd7.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:314586685170:android:bcd6ce85728ea337e3ba6b",
+        "android_client_info": {
+          "package_name": "com.inthevoid.platform"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCixiAWfvXE8IL6-_T3QCQxf-8DZtt1psg"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

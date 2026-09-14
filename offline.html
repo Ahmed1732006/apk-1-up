@@ -1,0 +1,57 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+<title>خطأ ف الجلسة</title>
+<style>
+  * { box-sizing: border-box; }
+  html, body { width: 100%; height: 100%; margin: 0; padding: 0; }
+  body {
+    overflow-x: hidden;
+    background: #ffffff;
+    font-family: 'Cairo', 'Segoe UI', Tahoma, system-ui, -apple-system, sans-serif;
+  }
+  .page_404 {
+    width: 100%; min-height: 100vh; min-height: 100svh;
+    display: flex; justify-content: center; align-items: center;
+    padding: 30px 15px; background: #fff;
+  }
+  .content_404 { width: 100%; max-width: 650px; text-align: center; margin: 0 auto; }
+  .icon_wrap {
+    width: clamp(140px, 32vw, 200px); height: clamp(140px, 32vw, 200px);
+    margin: 0 auto 10px; border-radius: 30px; overflow: hidden;
+    box-shadow: 0 15px 40px rgba(37,99,235,.25);
+  }
+  .icon_wrap img { width: 100%; height: 100%; object-fit: cover; display: block; }
+  .contant_box_404 h3 {
+    font-size: clamp(26px, 6vw, 38px); line-height: 1.4; font-weight: 800;
+    color: #1e293b; margin: 15px 0 12px;
+  }
+  .contant_box_404 p {
+    font-size: clamp(16px, 4vw, 20px); line-height: 1.8; color: #64748b;
+    max-width: 480px; margin: 0 auto 25px; padding: 0 10px;
+  }
+  .link_404 {
+    display: inline-flex; align-items: center; justify-content: center;
+    min-height: 52px; padding: 12px 30px; background: #2563eb; color: #fff !important;
+    font-size: clamp(16px, 4vw, 19px); font-weight: 700; text-decoration: none;
+    border-radius: 12px; box-shadow: 0 8px 20px rgba(37,99,235,.3);
+    border: none; cursor: pointer; -webkit-tap-highlight-color: transparent;
+  }
+  .link_404:active { transform: scale(0.96); }
+</style>
+</head>
+<body>
+  <section class="page_404">
+    <div class="content_404">
+      <div class="icon_wrap"><img src="./1.png" alt=""></div>
+      <div class="contant_box_404">
+        <h3>خطأ ف الجلسة</h3>
+        <p>ممكن تكون بسبب عدم وجود انترنت او مشكلة اخرى</p>
+        <button type="button" class="link_404" onclick="location.replace('./app/index.html')">حاول الدخول مرة اخرى</button>
+      </div>
+    </div>
+  </section>
+</body>
+</html>

@@ -1,0 +1,885 @@
+<!doctype html>
+<html lang="ar" dir="rtl">
+<head>
+
+<!-- أيقونة إدارة الأعضاء -->
+<link rel="icon" type="image/png" href="./10.png">
+<link rel="shortcut icon" type="image/png" href="./10.png">
+<link rel="apple-touch-icon" href="./10.png">
+
+<!-- إعدادات التثبيت على الشاشة الرئيسية -->
+<link rel="manifest" href="./manifest.json">
+<meta name="theme-color" content="#0b1020">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>In The Void Videomanagement</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Almarai:wght@400;700;800&family=Tajawal:wght@400;500;700&family=IBM+Plex+Mono:wght@500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () {
+    navigator.serviceWorker.register('./sw.js').catch(function () {});
+  });
+}
+</script>
+<style>
+/* ===== In The Void Videomanagement — نسخة فاتحة بطبقات ثلاثية الأبعاد =====
+   خلفية فاتحة هادئة، بطاقات بيضاء مرفوعة بظلال طبقية حقيقية (لا مسطحة)،
+   لون مميز واضح لكل رتبة (ذهبي للأدمن / بنفسجي للمشرف)، وحركة عند التحميل والتفاعل. */
+:root{
+  --bg:#eef1f7;--bg-2:#e4e9f3;
+  --panel:#ffffff;--panel-2:#f6f8fc;--panel-3:#eef1f8;
+  --line:#e2e7f1;--line-soft:#edf0f7;--line-strong:#cbd3e3;
+  --text:#1c2333;--text-dim:#5c657b;--text-faint:#93a0b8;
+  --accent:#3a5cdb;--accent-strong:#2745b8;--accent-soft:#e8edfd;--accent-line:#c3cff9;
+  --gold:#b9860f;--gold-strong:#8f6608;--gold-soft:#fdf3dc;--gold-line:#f0d38a;
+  --violet:#7c4fd6;--violet-strong:#5e35ad;--violet-soft:#f0e9fd;--violet-line:#d7c4f7;
+  --teal:#0f8aa3;--teal-strong:#0b6b7e;--teal-soft:#e2f5f8;--teal-line:#a9dfe8;
+  --good:#1f9d5c;--good-strong:#157a47;--good-soft:#e3f8ec;--good-line:#a8e6c4;
+  --danger:#d6473d;--danger-strong:#b3352c;--danger-soft:#fdeae8;--danger-line:#f3b8b1;
+  --radius:16px;--radius-sm:11px;
+  --font-head:'Almarai',Tahoma,sans-serif;--font-body:'Tajawal',Tahoma,sans-serif;--font-mono:'IBM Plex Mono',ui-monospace,monospace;
+  --ease:cubic-bezier(.2,.7,.3,1);
+  --shadow-sm:0 1px 2px rgba(28,35,66,.05),0 1px 1px rgba(28,35,66,.04);
+  --shadow-md:0 2px 4px rgba(28,35,66,.05),0 12px 24px -8px rgba(28,35,66,.14);
+  --shadow-lg:0 4px 10px rgba(28,35,66,.06),0 24px 48px -12px rgba(28,35,66,.22);
+}
+*{box-sizing:border-box}
+body{
+  margin:0;color:var(--text);font-family:var(--font-body);
+  background:
+    radial-gradient(1100px 500px at 15% -10%,#eaf0ff 0%,transparent 60%),
+    radial-gradient(900px 500px at 105% 10%,#fbf1e2 0%,transparent 55%),
+    var(--bg);
+  min-height:100vh;
+}
+::selection{background:var(--accent-soft);color:var(--accent-strong)}
+::-webkit-scrollbar{width:10px;height:10px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--line-strong);border-radius:99px}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:4px}
+
+h1,h2{font-family:var(--font-head)}
+.wrap{max-width:1180px;margin:auto;padding:22px 18px 60px}
+
+/* الشريط العلوي للعلامة */
+.brandbar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:6px 4px 22px;margin-bottom:6px}
+.brandmark{display:flex;align-items:center;gap:12px}
+.brandmark .mark{width:44px;height:44px;border-radius:13px;background:linear-gradient(150deg,#4d6df0,var(--accent-strong));display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:var(--shadow-md),inset 0 1px 0 rgba(255,255,255,.35);transform:translateZ(0)}
+.brandmark .txt b{display:block;font-family:var(--font-head);font-weight:800;font-size:17px;letter-spacing:.2px;color:var(--text)}
+.brandmark .txt span{display:block;font-size:12px;color:var(--text-faint)}
+.livepill{display:inline-flex;align-items:center;gap:8px;font-size:12px;color:var(--text-dim);font-family:var(--font-mono);border:1px solid var(--line);padding:7px 12px;border-radius:99px;background:var(--panel);box-shadow:var(--shadow-sm)}
+.livepill i{width:7px;height:7px;border-radius:50%;background:var(--good);box-shadow:0 0 0 0 rgba(31,157,92,.5);animation:pulse 2.4s ease-out infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(31,157,92,.55)}70%{box-shadow:0 0 0 8px rgba(31,157,92,0)}100%{box-shadow:0 0 0 0 rgba(31,157,92,0)}}
+
+/* البطاقات — مرفوعة بظل طبقي حقيقي + خط علوي متدرّج رفيع كتوقيع بصري */
+.card{
+  position:relative;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);padding:22px;margin-bottom:18px;
+  box-shadow:var(--shadow-md);overflow:hidden;
+  animation:riseIn .5s var(--ease) both;
+}
+.card::before{content:'';position:absolute;top:0;right:0;left:0;height:3px;background:linear-gradient(90deg,var(--accent-strong),var(--teal) 45%,var(--gold) 100%);opacity:.85}
+.top{display:flex;justify-content:space-between;align-items:center;gap:12px;flex-wrap:wrap}
+h1{margin:0 0 6px;font-size:22px;font-weight:800;letter-spacing:.1px;display:flex;align-items:center;gap:9px;color:var(--text)}
+h2{margin:0 0 14px;font-size:17px;font-weight:800;display:flex;align-items:center;gap:9px;color:var(--text)}
+h2 .ic{color:var(--accent-strong);background:var(--accent-soft);border-radius:9px;padding:5px;width:28px;height:28px;box-shadow:inset 0 1px 0 rgba(255,255,255,.6)}
+.sub,.muted{color:var(--text-dim);line-height:1.75;font-size:13.5px}
+
+/* الإحصاءات — بطاقات بارزة بتأثير 3D عند المرور */
+.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;perspective:900px}
+.stat{
+  position:relative;padding:17px;border:1px solid var(--line);border-radius:var(--radius-sm);background:var(--panel-2);
+  box-shadow:var(--shadow-sm);transition:transform .25s var(--ease),box-shadow .25s var(--ease);transform-style:preserve-3d;
+}
+.stat:hover{transform:translateY(-4px) rotateX(4deg);box-shadow:var(--shadow-lg)}
+.stat .ic{color:#fff;width:34px;height:34px;padding:8px;border-radius:10px;background:linear-gradient(150deg,var(--accent),var(--accent-strong));box-shadow:var(--shadow-sm)}
+.stat .muted{margin-top:11px;font-size:12.5px}
+.stat b{display:block;font-family:var(--font-mono);font-weight:600;font-size:27px;margin-top:4px;letter-spacing:.3px;color:var(--text);font-variant-numeric:tabular-nums}
+
+.controls{display:grid;grid-template-columns:2fr 1fr 1fr auto;gap:10px;margin:16px 0}
+input,select,textarea,button{font:inherit;color:var(--text)}
+input,select,textarea{
+  width:100%;border:1px solid var(--line);border-radius:var(--radius-sm);padding:11px 14px;background:var(--panel-2);outline:none;
+  transition:border-color .15s var(--ease),background .15s var(--ease),box-shadow .15s var(--ease);font-family:var(--font-body);
+}
+input::placeholder,textarea::placeholder{color:var(--text-faint)}
+input:focus,select:focus,textarea:focus{border-color:var(--accent-line);background:#fff;box-shadow:0 0 0 4px var(--accent-soft)}
+textarea{min-height:125px;resize:vertical;line-height:1.6}
+select{cursor:pointer}
+
+button{
+  border:1px solid transparent;border-radius:var(--radius-sm);padding:10px 16px;background:linear-gradient(150deg,#4d6df0,var(--accent-strong));color:#fff;
+  font-weight:800;font-family:var(--font-head);cursor:pointer;display:inline-flex;align-items:center;gap:7px;
+  box-shadow:0 1px 2px rgba(39,69,184,.15),0 8px 16px -6px rgba(39,69,184,.5);
+  transition:transform .15s var(--ease),box-shadow .15s var(--ease),filter .15s var(--ease);
+}
+button:hover{transform:translateY(-2px);box-shadow:0 2px 4px rgba(39,69,184,.18),0 14px 22px -6px rgba(39,69,184,.55)}
+button:active{transform:translateY(0) scale(.97);box-shadow:0 1px 2px rgba(39,69,184,.2)}
+button:disabled{opacity:.5;cursor:not-allowed;transform:none;box-shadow:none}
+.ic{width:16px;height:16px;flex:0 0 auto;display:inline-block;vertical-align:-3px}
+
+.btn-gray{background:var(--panel-2);color:var(--text-dim);border-color:var(--line);box-shadow:var(--shadow-sm)}
+.btn-gray:hover{color:var(--text);box-shadow:var(--shadow-md)}
+.btn-red{background:linear-gradient(150deg,#ea6459,var(--danger-strong));box-shadow:0 1px 2px rgba(179,53,44,.15),0 8px 16px -6px rgba(179,53,44,.45)}
+.btn-green{background:linear-gradient(150deg,#33ba76,var(--good-strong));box-shadow:0 1px 2px rgba(21,122,71,.15),0 8px 16px -6px rgba(21,122,71,.45)}
+.btn-purple{background:linear-gradient(150deg,#9a72e8,var(--violet-strong));box-shadow:0 1px 2px rgba(94,53,173,.15),0 8px 16px -6px rgba(94,53,173,.45)}
+.btn-gold{background:linear-gradient(150deg,#d9a51f,var(--gold-strong));box-shadow:0 1px 2px rgba(143,102,8,.15),0 8px 16px -6px rgba(143,102,8,.45)}
+.btn-cyan{background:linear-gradient(150deg,#2ba8c2,var(--teal-strong));box-shadow:0 1px 2px rgba(11,107,126,.15),0 8px 16px -6px rgba(11,107,126,.45)}
+
+.hidden{display:none!important}
+.status{padding:12px 14px;border-radius:var(--radius-sm);margin-top:12px;display:none;line-height:1.65;font-size:13.5px;border:1px solid transparent}
+.ok{display:flex;align-items:center;gap:8px;background:var(--good-soft);color:var(--good-strong);border-color:var(--good-line);animation:enter .25s var(--ease)}
+.err{display:flex;align-items:center;gap:8px;background:var(--danger-soft);color:var(--danger-strong);border-color:var(--danger-line);animation:shake .35s var(--ease)}
+@keyframes enter{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:translateY(0)}}
+@keyframes shake{0%,100%{transform:translateX(0)}25%{transform:translateX(-5px)}75%{transform:translateX(5px)}}
+@keyframes riseIn{from{opacity:0;transform:translateY(14px)}to{opacity:1;transform:translateY(0)}}
+
+/* بطاقة المستخدم — حافة ملوّنة واضحة بحسب الرتبة + رفعة 3D عند المرور */
+.grid.cards-users{perspective:1200px}
+#users{perspective:1200px}
+.user{
+  position:relative;border:1px solid var(--line);border-radius:var(--radius);padding:17px;margin-top:12px;background:var(--panel);
+  border-right:4px solid var(--line-strong);box-shadow:var(--shadow-sm);
+  transition:transform .22s var(--ease),box-shadow .22s var(--ease),border-color .22s var(--ease);
+  transform-style:preserve-3d;will-change:transform;
+  animation:riseIn .45s var(--ease) both;
+}
+.user:hover{box-shadow:var(--shadow-lg)}
+.user.rank-admin{border-right-color:var(--gold)}
+.user.rank-mod{border-right-color:var(--violet)}
+.userhead{display:flex;align-items:center;gap:13px}
+.avatar{
+  width:58px;height:58px;border-radius:50%;object-fit:cover;background:var(--panel-3);display:flex;align-items:center;justify-content:center;
+  font-weight:800;font-size:20px;flex:0 0 auto;border:3px solid var(--panel);box-shadow:0 0 0 2px var(--line-strong),var(--shadow-sm);color:var(--accent-strong);font-family:var(--font-head);
+}
+.user.rank-admin .avatar{box-shadow:0 0 0 2px var(--gold),var(--shadow-sm)}
+.user.rank-mod .avatar{box-shadow:0 0 0 2px var(--violet),var(--shadow-sm)}
+.name{font-size:16.5px;font-weight:800;font-family:var(--font-head)}
+.email{color:var(--text-dim);font-size:13px;word-break:break-all;font-family:var(--font-mono)}
+.meta{color:var(--text-faint);font-size:12.5px;margin-top:5px}
+
+.badges,.actions,.chips{display:flex;gap:7px;flex-wrap:wrap}
+.badges{margin-top:9px}
+.badge,.chip{
+  display:inline-flex;align-items:center;gap:6px;padding:5px 11px 5px 10px;border-radius:99px;background:var(--panel-3);
+  border:1px solid var(--line);font-size:11.5px;font-weight:800;color:var(--text-dim);
+}
+.badge::before{content:'';width:6px;height:6px;border-radius:50%;background:var(--text-faint);flex:0 0 auto}
+.badge:has(.ic)::before{display:none}
+.badge.admin{background:var(--gold-soft);color:var(--gold-strong);border-color:var(--gold-line)}.badge.admin::before{background:var(--gold)}
+.badge.mod{background:var(--violet-soft);color:var(--violet-strong);border-color:var(--violet-line)}.badge.mod::before{background:var(--violet)}
+.badge.off{background:var(--danger-soft);color:var(--danger-strong);border-color:var(--danger-line)}.badge.off::before{background:var(--danger)}
+.chip{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent-line)}.chip::before{display:none}
+
+.actions{margin-top:14px}
+.actions button{padding:8px 13px;font-size:12.5px}
+.details{display:none;margin-top:14px;padding-top:14px;border-top:1px dashed var(--line-strong)}
+.details.open{display:block;animation:enter .2s var(--ease)}
+.formgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.formgrid b{font-family:var(--font-head);font-size:13px}
+.field{margin-top:10px}
+.field label{display:block;font-weight:700;margin-bottom:6px;font-size:13.5px;color:var(--text-dim);font-family:var(--font-head)}
+.small{font-size:12px;color:var(--text-faint);line-height:1.65}
+
+.avatar-edit{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.avatar-preview{width:80px;height:80px;border-radius:50%;object-fit:cover;background:var(--panel-3);border:3px solid var(--panel);box-shadow:0 0 0 2px var(--line-strong)}
+.file-label{display:inline-flex;align-items:center;gap:7px;padding:9px 14px;border-radius:var(--radius-sm);background:var(--panel-2);border:1px solid var(--line);color:var(--text);font-weight:700;cursor:pointer;font-family:var(--font-head);box-shadow:var(--shadow-sm)}
+.file-label:hover{border-color:var(--accent-line);color:var(--accent-strong)}
+.file-label input{display:none}
+
+.title-grid{display:flex;flex-wrap:wrap;gap:7px}
+.title-option{background:var(--panel-2);color:var(--text-dim);border:1px solid var(--line);padding:7px 12px;font-size:12.5px;border-radius:99px;transition:all .15s var(--ease)}
+.title-option.active{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent-line);box-shadow:var(--shadow-sm)}
+.selected-title{background:var(--accent-soft);color:var(--accent-strong);border-color:var(--accent-line)}
+
+.theme-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:9px}
+.theme-grid label{border:1px solid var(--line);padding:10px;border-radius:var(--radius-sm);display:flex;gap:7px;align-items:center;font-weight:600;font-size:13px;background:var(--panel-2);cursor:pointer;transition:border-color .15s var(--ease)}
+.theme-grid label:has(input:checked){border-color:var(--accent-line);color:var(--accent-strong);background:var(--accent-soft)}
+.theme-grid input{width:auto;accent-color:var(--accent)}
+
+.modal-back{position:fixed;inset:0;background:rgba(20,26,46,.5);backdrop-filter:blur(4px);z-index:9999;display:flex;align-items:center;justify-content:center;padding:14px;animation:fadeBack .18s var(--ease)}
+.modal{
+  background:var(--panel);border:1px solid var(--line);border-radius:20px;max-width:680px;width:100%;max-height:92vh;overflow:auto;padding:24px;
+  box-shadow:0 30px 70px -15px rgba(20,26,46,.45);animation:modalIn .28s var(--ease);
+}
+@keyframes fadeBack{from{opacity:0}to{opacity:1}}
+@keyframes modalIn{from{opacity:0;transform:translateY(16px) scale(.94) rotateX(6deg)}to{opacity:1;transform:translateY(0) scale(1) rotateX(0)}}
+.modal-head{display:flex;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px}
+.modal-head h2{margin:0}
+.close{width:34px;height:34px;padding:0;background:var(--panel-2);color:var(--text-dim);border:1px solid var(--line);border-radius:50%;justify-content:center;box-shadow:var(--shadow-sm)}
+.close:hover{color:#fff;background:linear-gradient(150deg,#ea6459,var(--danger-strong));border-color:transparent}
+
+.media-preview{margin-top:10px;max-width:100%;border-radius:var(--radius-sm);background:#10131c;overflow:hidden;border:1px solid var(--line)}
+.media-preview img,.media-preview video{width:100%;max-height:300px;object-fit:contain;display:block}
+
+.login{max-width:420px;margin:9vh auto 0}
+.login .card{padding:30px 26px;animation:riseIn .55s var(--ease) both}
+.login .brand{display:flex;flex-direction:column;align-items:center;text-align:center;gap:12px;margin-bottom:6px}
+.login .brand .mark{width:58px;height:58px;border-radius:16px;background:linear-gradient(150deg,#4d6df0,var(--accent-strong));display:flex;align-items:center;justify-content:center;color:#fff;box-shadow:var(--shadow-lg),inset 0 1px 0 rgba(255,255,255,.35)}
+.login .brand .mark .ic{width:28px;height:28px}
+.login h1{justify-content:center;font-size:19px}
+.login label{display:block;margin-top:14px;margin-bottom:6px;font-weight:700;font-size:13.5px;color:var(--text-dim);font-family:var(--font-head)}
+.danger-note{background:var(--accent-soft);border:1px solid var(--accent-line);padding:11px 13px;border-radius:var(--radius-sm);color:var(--accent-strong);font-size:13px;line-height:1.65}
+
+@media(prefers-reduced-motion:reduce){*{animation-duration:.001ms!important;animation-iteration-count:1!important;transition-duration:.001ms!important}}
+@media(max-width:800px){.grid{grid-template-columns:1fr 1fr}.controls{grid-template-columns:1fr 1fr}.theme-grid{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){.grid,.formgrid,.controls,.theme-grid{grid-template-columns:1fr}.wrap{padding:12px}.login{margin-top:6vh}}
+
+/* ===== In The Void Videomanagement branding ===== */
+.brandmark .mark, .login .brand .mark{
+  background:linear-gradient(145deg,#1769ff,#0b2e78 58%,#f59e0b);
+  overflow:hidden;
+  padding:0;
+}
+.brandmark .mark img{width:100%;height:100%;object-fit:cover;display:block}
+.login .brand .mark img{width:100%;height:100%;object-fit:cover;display:block}
+.brandmark .txt b{font-size:16px;background:linear-gradient(90deg,#155eef 0%,#155eef 55%,#d97706 100%);-webkit-background-clip:text;background-clip:text;color:transparent}
+.brandmark .txt span{color:#55709e}
+.btn-cyan{background:linear-gradient(145deg,#147dff,#0752c7 62%,#0a3d98);border-color:#2d8cff;box-shadow:0 1px 2px rgba(7,82,199,.16),0 8px 16px -6px rgba(7,82,199,.45)}
+.btn-purple{background:linear-gradient(145deg,#8b5cf6,#5b21b6 58%,#3b177d);border-color:#9b73ff;box-shadow:0 1px 2px rgba(91,33,182,.16),0 8px 16px -6px rgba(91,33,182,.45)}
+.btn-cyan:hover,.btn-purple:hover{filter:saturate(1.08) brightness(1.03)}
+.brand-nav-icon{width:18px;height:18px;object-fit:contain;display:block;flex:0 0 auto}
+.login h1{font-size:20px;letter-spacing:.1px}
+<style id="dragon-admin-style">.dragon-admin-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px;margin-top:12px}.dragon-admin-row{border:1px solid #dbe5ef;border-radius:14px;padding:12px;background:#f8fafc}.dragon-admin-row label{display:block;font-weight:900;margin-bottom:6px}.dragon-admin-help{font-size:12px;opacity:.72;margin-top:5px}.dragon-member-picker{margin-top:10px;border:1px solid #dbe5ef;border-radius:14px;padding:10px;background:#fff;max-height:260px;overflow:auto}.dragon-member-item{display:flex;align-items:center;gap:9px;padding:8px 9px;border-bottom:1px dashed #e4eaf2;cursor:pointer}.dragon-member-item:last-child{border-bottom:0}.dragon-member-item input{width:auto;flex:0 0 auto}.dragon-member-name{font-weight:800}.dragon-member-email{display:block;font-size:11px;color:#8290a8;margin-top:2px}.dragon-hidden{display:none!important}@media(max-width:700px){.dragon-admin-grid{grid-template-columns:1fr}}</style>
+</head>
+<body>
+
+<div id="loginView" class="wrap login">
+<div class="card">
+<div class="brand"><div class="mark"><img src="./10.png" alt="In The Void Videomanagement"></div><h1>In The Void Videomanagement</h1></div>
+<label>البريد الإلكتروني</label><input id="email" type="email" autocomplete="username">
+<label>كلمة السر</label><input id="password" type="password" autocomplete="current-password">
+<button id="loginBtn" style="width:100%;margin-top:16px;justify-content:center" onclick="login()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h4a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2h-4"/><path d="M10 17l5-5-5-5"/><path d="M15 12H3"/></svg>دخول</button>
+<div id="loginStatus" class="status"></div>
+</div></div>
+
+<div id="appView" class="wrap hidden">
+<div class="brandbar">
+<div class="brandmark"><div class="mark"><img src="./10.png" alt="In The Void Videomanagement"></div><div class="txt"><b>In The Void</b><span>Videomanagement</span></div></div>
+<div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap"><span class="livepill"><i></i>متصل الآن</span><button class="btn-cyan" onclick="window.open('https://in-the-void-eta.vercel.app/','_blank','noopener,noreferrer')"><img class="brand-nav-icon" src="./13.png" alt="">In TheVoid</button><button class="btn-purple" onclick="window.open('https://videomanagement-ivory.vercel.app/','_blank','noopener,noreferrer')"><img class="brand-nav-icon" src="./11.png" alt="">إدارة الفيديوهات</button><button class="btn-gray" onclick="logout()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><path d="M16 17l5-5-5-5"/><path d="M21 12H9"/></svg>خروج</button></div>
+</div>
+<div class="card"><div class="top"><div><h2 style="margin-bottom:4px"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>نظرة عامة</h2><div class="sub">كل أدوات الإدارة في مكان واحد.</div></div></div><div class="grid" id="stats"></div></div>
+
+<div class="card">
+<div class="top"><div><h2 style="margin:0">🐉 إعدادات التنين</h2><div class="sub">تحكم مستقل في ظهور التنين للأعضاء والإدمن، بدون التأثير على الإشعارات أو رسائل الإدارة.</div></div></div>
+<div id="dragonAdminSettings"><div class="muted">جاري تحميل إعدادات التنين...</div></div>
+</div>
+
+<div class="card">
+<div class="top" style="margin-bottom:10px">
+<h2 style="margin:0"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/></svg>المستخدمون</h2>
+<div class="actions" style="margin:0">
+<button class="btn-green" onclick="openInstantAccount()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/></svg>حساب فوري</button>
+<button class="btn-purple" onclick="openTemporaryAccount()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 2h12M6 22h12M6 2c0 5 4 6 6 8-2 2-6 3-6 8M18 2c0 5-4 6-6 8 2 2 6 3 6 8"/></svg>حساب مؤقت</button>
+</div>
+</div>
+<div class="controls">
+<input id="search" placeholder="ابحث بالاسم أو البريد أو الهاتف..." oninput="renderUsers()">
+<select id="roleFilter" onchange="renderUsers()"><option value="">كل الصلاحيات</option><option value="member">عضو</option><option value="moderator">مشرف</option><option value="admin">أدمن</option></select>
+<select id="statusFilter" onchange="renderUsers()"><option value="">كل الحالات</option><option value="approved">مقبول</option><option value="pending">معلق</option><option value="revoked">مرفوض/موقوف</option><option value="temporary">مؤقت</option></select>
+<button onclick="loadUsers()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/></svg>تحديث</button>
+</div><div id="users"></div><div id="mainStatus" class="status"></div>
+</div>
+
+<div class="card">
+<h2><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>إرسال رسالة</h2>
+<div class="sub">يستخدم نفس جدول <b>user_messages</b> ونفس Storage bucket <b>admin-messages</b> الموجودين في موقعك. تقدر تبعت نص + صورة/GIF + فيديو، وتُحفظ فواصل الأسطر بشكل صحيح.</div>
+<div class="formgrid">
+<div><label>المستلم</label><select id="messageUser" onchange="syncMessageTarget()"><option value="all">جميع الحسابات</option></select></div>
+<div><label>عدد مرات الظهور</label><select id="messageViews"><option value="1">مرة واحدة</option><option value="2">مرتين</option><option value="3">3 مرات</option><option value="5">5 مرات</option><option value="10">10 مرات</option><option value="20">20 مرة</option><option value="unlimited">بدون حد</option></select></div>
+</div>
+<div class="field"><label>عنوان الرسالة</label><input id="messageTitle" maxlength="120" placeholder="مثال: تنبيه من الإدارة"></div>
+<div class="field"><label>نص الرسالة</label><textarea id="messageBody" maxlength="5000" placeholder="اكتب الرسالة هنا..."></textarea></div>
+<div class="field"><label>صورة أو فيديو</label><input id="messageMedia" type="file" accept="image/png,image/jpeg,image/gif,video/mp4,video/webm,video/quicktime"><div id="messageMediaPreview"></div><div class="small">PNG / JPG / GIF / MP4 / WEBM / MOV — حتى 25MB.</div></div>
+<button onclick="sendMessage()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m22 2-7 20-4-9-9-4 20-7Z"/><path d="M11 13 22 2"/></svg>إرسال الرسالة</button><div id="messageStatus" class="status"></div>
+</div>
+</div>
+
+
+<div class="card">
+  <div class="top">
+    <div><h2 style="margin:0"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/></svg>سجل الرسائل</h2><div class="sub">اعرف مين شاف الرسالة ومين لسه، واحذف رسالة واحدة أو كل الرسائل.</div></div>
+    <button class="btn-red" onclick="deleteAllMessages()"><svg class="ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/></svg>حذف كل الرسائل</button>
+  </div>
+  <div id="messageHistory" style="margin-top:12px"></div>
+  <div id="historyStatus" class="status"></div>
+</div>
+<div id="modalRoot"></div>
+
+<script>
+const SUPABASE_URL = "https://clobfjrjhdysmqhbwzlc.supabase.co";
+const SUPABASE_KEY = "sb_publishable_LEFYVl0Y8VOnMIbBZev1Vg_0pYSMWpv";
+const sb = window.supabase.createClient(SUPABASE_URL,SUPABASE_KEY);
+const $=id=>document.getElementById(id);
+let users=[], currentUserId=null, titleSelection=[], pendingAvatarFile=null;
+let dragonAdminSettings={enabled:true,target_type:'all',default_device_mode:'both',members_default_user_enabled:true,admin_enabled:true,admin_device_mode:'both',admin_control_enabled:false,admin_user_enabled:true,members_control_available:false};
+let dragonUserSettingsCache={};
+let dragonDragonUserRows=[];
+
+// مجموعة أيقونات SVG موحدة تستخدم بدل الإيموجي في كل الواجهة الديناميكية
+const ICON_PATHS={
+ shield:'<path d="M12 2 4 5.5v6c0 5.2 3.4 8.9 8 10.5 4.6-1.6 8-5.3 8-10.5v-6L12 2Z"/><path d="m9 12 2 2 4-4.5"/>',
+ users:'<path d="M17 21v-2a4 4 0 0 0-4-4H7a4 4 0 0 0-4 4v2"/><circle cx="10" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
+ crown:'<path d="M3 19h18"/><path d="m4 16 1.5-8L9 12l3-6 3 6 3.5-4L20 16H4Z"/>',
+ mod:'<path d="M12 2 4 5.5v6c0 5.2 3.4 8.9 8 10.5 4.6-1.6 8-5.3 8-10.5v-6L12 2Z"/>',
+ hourglass:'<path d="M6 2h12M6 22h12M6 2c0 5 4 6 6 8-2 2-6 3-6 8M18 2c0 5-4 6-6 8 2 2 6 3 6 8"/>',
+ search:'<circle cx="11" cy="11" r="7"/><path d="m21 21-4.3-4.3"/>',
+ bolt:'<path d="M13 2 4 14h7l-1 8 9-12h-7l1-8Z"/>',
+ palette:'<circle cx="12" cy="12" r="9"/><circle cx="9" cy="10" r="1" fill="currentColor" stroke="none"/><circle cx="12.5" cy="8" r="1" fill="currentColor" stroke="none"/><circle cx="15.5" cy="10.5" r="1" fill="currentColor" stroke="none"/><path d="M12 21a9 9 0 0 1 0-18c.6 0 1 .5 1 1.2 0 .4-.2.7-.4 1-.3.3-.4.6-.4 1 0 .8.6 1.3 1.4 1.3H15a3 3 0 0 1 3 3 6.3 6.3 0 0 1-6 6.5"/>',
+ edit:'<path d="M12 20h9"/><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"/>',
+ trash:'<path d="M3 6h18"/><path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/><path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6"/>',
+ check:'<path d="M20 6 9 17l-5-5"/>',
+ block:'<circle cx="12" cy="12" r="9"/><path d="m5.5 5.5 13 13"/>',
+ refresh:'<path d="M21 12a9 9 0 1 1-2.64-6.36"/><path d="M21 3v6h-6"/>',
+ eye:'<path d="M2 12s3.5-7 10-7 10 7 10 7-3.5 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/>',
+ image:'<rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="9" cy="9" r="2"/><path d="m21 15-5-5L5 21"/>',
+ star:'<path d="M12 3.5 14.5 9l6 .8-4.4 4.1 1.1 5.9L12 17l-5.2 2.8 1.1-5.9L3.5 9.8l6-.8Z"/>',
+ send:'<path d="m22 2-7 20-4-9-9-4 20-7Z"/><path d="M11 13 22 2"/>',
+ mail:'<rect x="3" y="5" width="18" height="14" rx="2"/><path d="m3 7 9 6 9-6"/>',
+ history:'<path d="M3 3v18h18"/><path d="m19 9-5 5-4-4-3 3"/>',
+ clock:'<circle cx="12" cy="12" r="9"/><path d="M12 7v5l3 2"/>',
+ person:'<circle cx="12" cy="8" r="4"/><path d="M4 21v-1a6 6 0 0 1 6-6h4a6 6 0 0 1 6 6v1"/>',
+ bell:'<path d="M9 17a3 3 0 0 0 6 0"/><path d="M6 8a6 6 0 0 1 12 0c0 5 2 6 2 6H4s2-1 2-6Z"/>',
+};
+function ic(name,extra){return `<svg class="ic${extra?(' '+extra):''}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round">${ICON_PATHS[name]||''}</svg>`;}
+
+// Always pass the current Supabase access token explicitly to Edge Functions.
+// This fixes admin pages where functions.invoke() can otherwise reach the
+// function without the user's Authorization header.
+async function invokeAuthedFunction(functionName, body){
+  const {data:{session}, error}=await sb.auth.getSession();
+  if(error) throw new Error('تعذر قراءة جلسة الأدمن: '+(error.message||'خطأ غير معروف'));
+  if(!session?.access_token) throw new Error('جلسة الأدمن منتهية أو غير موجودة. سجّل الدخول من جديد.');
+  const result=await sb.functions.invoke(functionName,{
+    body,
+    headers:{Authorization:`Bearer ${session.access_token}`}
+  });
+  return result;
+}
+
+const TITLE_PRESETS=['قمر','نجمة','وردة','ميوش','ميموية','صحبي','صحبتي','صديقي','صديقتي','أمير','ملكة','نجم','كوكب','لؤلؤة','فراشة','سكر','عسل','برنس','برنسيسة','شطور','جدع','باشا','باشمهندس','فنان','فنانة','مبدع','مبدعة','أسطورة','روح حلوة','الجامد','الجامدة','الرايق','الرايقة','الكابتن','الزعيم','الملكة','الأمير','نجم اليوم','صاحبنا','صاحبتنا','رفيق','رفيقة','غالي','غالية'];
+const THEME_FALLBACK={
+'theme-1':'التصميم 1','theme-2':'التصميم الأخضر','theme-3':'التصميم الإبداعي','theme-4':'التصميم التحريري','theme-5':'الرمادي المصقول والكهرماني','theme-6':'الأزرق الملكي والذهبي','theme-7':'دراسة الزمرد','theme-8':'العنابي الملكي والشمبانيا','theme-baby-blue':'الأزرق الفاتح','theme-aurora-glass':'زجاج الشفق','theme-warda-pink':'الوردي الورد','theme-legend-pink':'الوردي الأسطوري','theme-legend-babyblue':'بيبي بلو الأسطوري','theme-legend-night':'الليل الساحر','theme-pop-pink':'وردي بابلجم','theme-frost-blue':'الجليدي','theme-galaxy':'المجرة','theme-forest':'الغابة الساحرة'};
+
+function esc(v){return String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[c]));}
+function show(id,text,type='ok'){const e=$(id);if(!e)return;e.textContent=text;e.className='status '+type;}
+function titleList(v){if(Array.isArray(v))return v.map(x=>String(x).trim()).filter(Boolean);return String(v||'').split(/[,،|]/).map(x=>x.trim()).filter(Boolean);}
+function nameOf(u){return (u?.full_name||u?.name||'الاسم غير مسجل').trim()||'الاسم غير مسجل';}
+function phoneOf(u){return (u?.phone_number||u?.phone||'التليفون غير مسجل').trim()||'التليفون غير مسجل';}
+function formatLastSeen(v){
+  if(!v)return 'لم يفتح الموقع بعد';
+  const d=new Date(v);
+  return Number.isNaN(d.getTime())?'غير مسجل':d.toLocaleString('ar-EG');
+}
+function statusOf(u){if(u?.role==='admin'||u?.role==='super_admin')return ['admin','أدمن ذهبي','admin'];if(u?.role==='moderator')return ['moderator','مشرف','mod'];if(u?.status==='revoked')return ['revoked','مرفوض / موقوف','off'];if(u?.status==='pending')return ['pending','في انتظار الموافقة','off'];if(u?.account_type==='temporary'||u?.is_temporary===true||u?.must_change_credentials===true)return ['temporary','حساب مؤقت',''];return ['approved','عضو مقبول',''];}
+function avatarUrl(u){const p=u?.avatar_path||u?.avatar_url;if(!p)return '';if(/^https?:|^data:|^blob:/i.test(p))return p;return sb.storage.from('avatars').getPublicUrl(p).data?.publicUrl||'';}
+
+async function login(){
+ const email=$('email').value.trim(),password=$('password').value;if(!email||!password)return show('loginStatus','اكتب الإيميل وكلمة السر.','err');
+ $('loginBtn').disabled=true;$('loginBtn').textContent='جاري الدخول...';
+ try{const {data,error}=await sb.auth.signInWithPassword({email,password});if(error)throw error;
+ const {data:p,error:pe}=await sb.from('profiles').select('id,role,is_owner_admin,full_name,name,email').eq('id',data.user.id).maybeSingle();if(pe)throw pe;
+ if(!p?.is_owner_admin){await sb.auth.signOut();throw new Error('هذا الحساب ليس الأدمن المالك.');}
+ currentUserId=data.user.id;$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');await Promise.all([loadUsers(),loadDragonAdminSettings()]);
+ }catch(e){show('loginStatus',e.message||'تعذر الدخول','err');}finally{$('loginBtn').disabled=false;$('loginBtn').textContent='دخول';}
+}
+async function logout(){await sb.auth.signOut();location.reload();}
+
+async function loadDragonAdminSettings(){
+ try{
+  const {data,error}=await sb.rpc('dragon_admin_get_settings'); if(error)throw error;
+  const row=Array.isArray(data)?data[0]:data;
+  if(row) dragonAdminSettings={...dragonAdminSettings,...row};
+  await loadDragonUserRows();
+  const g=$('dragonAdminSettings'); if(g) renderDragonAdminSettings();
+ }catch(e){show('mainStatus','تعذر تحميل إعدادات التنين: '+(e.message||'خطأ'),'err');}
+}
+
+async function loadDragonUserRows(){
+ try{
+  const {data,error}=await sb.rpc('dragon_admin_get_all_user_settings');
+  if(error)throw error;
+  dragonDragonUserRows=Array.isArray(data)?data:[];
+  dragonDragonUserRows.forEach(r=>{dragonUserSettingsCache[String(r.user_id)]=r;});
+ }catch(e){dragonDragonUserRows=[];}
+}
+
+function renderDragonMemberPicker(){
+ const rows=dragonDragonUserRows.filter(u=>!users.find(x=>String(x.id)===String(u.user_id))?.is_owner_admin);
+ if(!rows.length) return '<div class="small">لا توجد حسابات متاحة للتحديد.</div>';
+ const selected=dragonAdminSettings.target_type==='selected';
+ return `<div class="dragon-member-picker ${selected?'':'dragon-hidden'}" id="dragonMemberPicker">
+   ${rows.map(u=>`<label class="dragon-member-item"><input type="checkbox" class="dragon-member-check" data-user-id="${esc(u.user_id)}" ${u.allowed?'checked':''}><span><span class="dragon-member-name">${esc(u.full_name||'الاسم غير مسجل')}</span><span class="dragon-member-email">${esc(u.email||'بدون بريد')}</span></span></label>`).join('')}
+ </div>`;
+}
+
+function renderDragonAdminSettings(){
+ const g=$('dragonAdminSettings'); if(!g)return;
+ const s=dragonAdminSettings;
+ g.innerHTML=`<div class="dragon-admin-grid">
+  <div class="dragon-admin-row"><label>🐉 التنين العام</label><select id="dragonEnabled"><option value="true" ${s.enabled?'selected':''}>موجود ومتاح</option><option value="false" ${!s.enabled?'selected':''}>مخفي تمامًا</option></select><div class="dragon-admin-help">إيقافه يخفي التنين عن الجميع.</div></div>
+  <div class="dragon-admin-row"><label>إظهار التنين للأعضاء</label><select id="dragonTarget" onchange="toggleDragonMemberPicker()"><option value="all" ${s.target_type==='all'?'selected':''}>كل الأعضاء</option><option value="selected" ${s.target_type==='selected'?'selected':''}>أعضاء محددين فقط</option></select><div class="dragon-admin-help">عند اختيار أعضاء محددين، حددهم من القائمة.</div>${renderDragonMemberPicker()}</div>
+  <div class="dragon-admin-row"><label>أجهزة الأعضاء</label><select id="dragonMemberDevice"><option value="both" ${s.default_device_mode==='both'?'selected':''}>الموبايل والكمبيوتر</option><option value="mobile" ${s.default_device_mode==='mobile'?'selected':''}>الموبايل فقط</option><option value="desktop" ${s.default_device_mode==='desktop'?'selected':''}>الكمبيوتر فقط</option></select></div>
+  <div class="dragon-admin-row"><label>حالة التنين للأعضاء عند الدخول</label><select id="dragonMemberStart"><option value="true" ${s.members_default_user_enabled!==false?'selected':''}>يظهر تلقائيًا عند الدخول</option><option value="false" ${s.members_default_user_enabled===false?'selected':''}>يحتاج تفعيله من الملف الشخصي</option></select><div class="dragon-admin-help">هذا هو الإعداد العام لكل الأعضاء. ويمكن تغييره لاحقًا بشكل منفصل لأي عضو.</div></div>
+  <div class="dragon-admin-row"><label>إتاحة زر التحكم للأعضاء</label><select id="dragonMemberControl"><option value="true" ${s.members_control_available?'selected':''}>مسموح إظهاره</option><option value="false" ${!s.members_control_available?'selected':''}>مخفي عن الأعضاء</option></select><div class="dragon-admin-help">يمكنك التحكم فيه أيضًا لكل عضو من تعديل المستخدم.</div></div>
+  <div class="dragon-admin-row"><label>إظهار التنين للإدمن</label><select id="dragonAdminEnabled"><option value="true" ${s.admin_enabled?'selected':''}>متاح</option><option value="false" ${!s.admin_enabled?'selected':''}>مخفي</option></select></div>
+  <div class="dragon-admin-row"><label>أجهزة الإدمن</label><select id="dragonAdminDevice"><option value="both" ${s.admin_device_mode==='both'?'selected':''}>الموبايل والكمبيوتر</option><option value="mobile" ${s.admin_device_mode==='mobile'?'selected':''}>الموبايل فقط</option><option value="desktop" ${s.admin_device_mode==='desktop'?'selected':''}>الكمبيوتر فقط</option></select></div>
+  <div class="dragon-admin-row"><label>زر التحكم للإدمن</label><select id="dragonAdminControl"><option value="true" ${s.admin_control_enabled?'selected':''}>ظاهر للإدمن</option><option value="false" ${!s.admin_control_enabled?'selected':''}>مخفي عن الإدمن</option></select><div class="dragon-admin-help">يسمح للإدمن بإظهار/إخفاء التنين لنفسه من الملف الشخصي.</div></div>
+  <div class="dragon-admin-row"><label>حالة التنين للإدمن عند الدخول</label><select id="dragonAdminStart"><option value="true" ${s.admin_user_enabled?'selected':''}>يظهر تلقائيًا عند الدخول</option><option value="false" ${!s.admin_user_enabled?'selected':''}>يحتاج تفعيله من الملف الشخصي</option></select></div>
+ </div><div class="actions" style="margin-top:12px"><button class="btn-cyan" onclick="saveDragonAdminSettings()">${ic('check')}حفظ إعدادات التنين</button></div>`;
+}
+
+function toggleDragonMemberPicker(){
+ const el=$('dragonMemberPicker'); if(el) el.classList.toggle('dragon-hidden',$('dragonTarget').value!=='selected');
+}
+
+async function saveDragonAdminSettings(){
+ try{
+  const payload={
+   p_enabled:$('dragonEnabled').value==='true',
+   p_target_type:$('dragonTarget').value,
+   p_default_device_mode:$('dragonMemberDevice').value,p_members_default_user_enabled:$('dragonMemberStart').value==='true',
+   p_admin_enabled:$('dragonAdminEnabled').value==='true',
+   p_admin_device_mode:$('dragonAdminDevice').value,
+   p_members_control_available:$('dragonMemberControl').value==='true',
+   p_admin_control_enabled:$('dragonAdminControl').value==='true',
+   p_admin_user_enabled:$('dragonAdminStart').value==='true'
+  };
+  const {error}=await sb.rpc('dragon_admin_set_settings',payload); if(error)throw error;
+  const checks=[...document.querySelectorAll('.dragon-member-check')];
+  if(checks.length){
+   await Promise.all(checks.map(async ch=>{
+    const id=String(ch.dataset.userId||''); if(!id)return;
+    const old=dragonUserSettingsCache[id]||{};
+    const {error:e}=await sb.rpc('dragon_admin_set_user',{
+      p_user_id:id,
+      p_allowed:ch.checked,
+      p_control_enabled:old.control_enabled===true,
+      p_user_enabled:old.user_enabled!==false,
+      p_device_mode:old.device_mode||payload.p_default_device_mode
+    });
+    if(e)throw e;
+   }));
+  }
+  dragonAdminSettings={enabled:payload.p_enabled,target_type:payload.p_target_type,default_device_mode:payload.p_default_device_mode,members_default_user_enabled:payload.p_members_default_user_enabled,admin_enabled:payload.p_admin_enabled,admin_device_mode:payload.p_admin_device_mode,members_control_available:payload.p_members_control_available,admin_control_enabled:payload.p_admin_control_enabled,admin_user_enabled:payload.p_admin_user_enabled};
+  await loadDragonUserRows();
+  renderDragonAdminSettings();
+  show('mainStatus','تم حفظ إعدادات التنين ✅','ok');
+ }catch(e){show('mainStatus','تعذر حفظ إعدادات التنين: '+(e.message||'خطأ'),'err');}
+}
+
+async function loadDragonUserSettings(id){
+ try{const {data,error}=await sb.rpc('dragon_admin_get_user_settings',{p_user_id:id});if(error)throw error;dragonUserSettingsCache[id]=(Array.isArray(data)?data[0]:data)||null;}
+ catch(e){dragonUserSettingsCache[id]=null;}
+}
+async function saveDragonUserSettings(id){
+ const {error}=await sb.rpc('dragon_admin_set_user',{
+  p_user_id:id,
+  p_allowed:$('dragonAllowed').value==='true',
+  p_control_enabled:$('dragonControl').value==='true',
+  p_user_enabled:$('dragonStartEnabled').value==='true',
+  p_device_mode:$('dragonUserDevice').value
+ });
+ if(error) throw error;
+}
+
+async function loadUsers(){
+ $('users').innerHTML='<p class="muted">جاري تحميل المستخدمين...</p>';
+ try{const [p,r]=await Promise.all([sb.from('profiles').select('*').order('created_at',{ascending:false}),sb.from('account_requests').select('*').order('created_at',{ascending:false})]);
+ if(p.error)throw p.error;if(r.error)throw r.error;users=p.data||[];window.requests=r.data||[];await loadTemporaryRequests();renderStats();fillMessageUsers();renderUsers();$('users').insertAdjacentHTML('beforeend',renderTemporaryRequests());await loadMessageHistory();
+ }catch(e){$('users').innerHTML='';show('mainStatus','تعذر تحميل المستخدمين: '+(e.message||'خطأ'),'err');}
+}
+function renderStats(){
+ const c=x=>users.filter(u=>u.role===x).length;
+ $('stats').innerHTML=[['users','كل الحسابات',users.length],['crown','الأدمن',c('admin')+c('super_admin')],['mod','المشرفون',c('moderator')],['hourglass','طلبات معلقة',users.filter(u=>u.status==='pending').length]].map(x=>`<div class="stat">${ic(x[0])}<div class="muted">${x[1]}</div><b data-count="${x[2]}">0</b></div>`).join('');
+ staggerCards($('stats'));
+ requestAnimationFrame(countStats);
+}
+function countStats(){
+ document.querySelectorAll('#stats b[data-count]').forEach(el=>{
+  const target=parseInt(el.getAttribute('data-count'),10)||0,dur=500,t0=performance.now();
+  function step(t){const p=Math.min(1,(t-t0)/dur);el.textContent=Math.round(target*(1-Math.pow(1-p,3)));if(p<1)requestAnimationFrame(step);}
+  requestAnimationFrame(step);
+ });
+}
+function fillMessageUsers(){
+ $('messageUser').innerHTML='<option value="all">جميع الحسابات</option>'+users.filter(u=>!u.is_owner_admin).map(u=>`<option value="${esc(u.id)}">${esc(nameOf(u))} — ${esc(u.email||'بدون بريد')}</option>`).join('');
+}
+function syncMessageTarget(){}
+
+function renderUsers(){
+ const q=$('search').value.trim().toLowerCase(),rf=$('roleFilter').value,sf=$('statusFilter').value;
+ const list=users.filter(u=>{const s=statusOf(u)[0];const hay=[u.full_name,u.name,u.email,u.phone,u.phone_number,u.role,u.status].filter(Boolean).join(' ').toLowerCase();return(!q||hay.includes(q))&&(!rf||((rf==='admin')?(u.role==='admin'||u.role==='super_admin'):u.role===rf))&&(!sf||s===sf);});
+ if(!list.length){$('users').innerHTML='<p class="muted">لا توجد نتائج.</p>';return;}
+ $('users').innerHTML=list.map(userCard).join('');
+ staggerCards($('users'));
+}
+function userCard(u){
+ const [sk,sl,bt]=statusOf(u),av=avatarUrl(u),titles=titleList(u.profile_title),vis=visibleTitleList(u);
+ const owner=u.is_owner_admin;
+ const rankClass=sk==='admin'?'rank-admin':sk==='moderator'?'rank-mod':'';
+ return `<div class="user ${rankClass}">
+ <div class="userhead">${av?`<img class="avatar" src="${esc(av)}" alt="">`:`<div class="avatar">${esc(nameOf(u).slice(0,1))}</div>`}
+ <div style="flex:1"><div class="name">${esc(nameOf(u))}</div><div class="email">${esc(u.email||'البريد غير مسجل')}</div>
+ <div class="meta">${esc(phoneOf(u))} ${u.created_at?' • '+esc(new Date(u.created_at).toLocaleDateString('ar-EG')):''}</div>
+ <div class="badges"><span class="badge ${bt}">${esc(sl)}</span>${vis.map(t=>`<span class="badge">${esc(t)}</span>`).join('')}</div></div></div>
+ <div class="actions">
+ <button class="btn-gray" onclick="openEdit('${esc(u.id)}')">${ic('edit')}تعديل</button>
+ <button class="btn-cyan" onclick="openThemes('${esc(u.id)}')">${ic('palette')}سمات</button>
+ ${owner?'':`<button class="btn-purple" onclick="changeRole('${esc(u.id)}','moderator')">${ic('mod')}مشرف</button><button class="btn-gold" onclick="changeRole('${esc(u.id)}','admin')">${ic('crown')}أدمن</button><button class="btn-gray" onclick="changeRole('${esc(u.id)}','member')">${ic('person')}عضو</button>
+ ${sk==='pending'?`<button class="btn-green" onclick="approve('${esc(u.id)}')">${ic('check')}قبول</button>`:''}
+ ${sk!=='revoked'&&sk!=='admin'?`<button class="btn-red" onclick="rejectUser('${esc(u.id)}')">${ic('block')}رفض / سحب</button>`:''}
+ ${sk==='revoked'?`<button class="btn-green" onclick="approve('${esc(u.id)}')">${ic('refresh')}إعادة تفعيل</button>`:''}
+ <button class="btn-red" onclick="deleteUser('${esc(u.id)}')">${ic('trash')}حذف الحساب</button>`}
+ <button class="btn-gray" onclick="toggleDetails('${esc(u.id)}')">${ic('eye')}تفاصيل</button>
+ </div>
+ <div class="details" id="d-${esc(u.id)}"><div class="formgrid">
+ <div><b>البريد:</b><div class="muted">${esc(u.email||'غير مسجل')}</div></div><div><b>الحالة:</b><div class="muted">${esc(sl)}</div></div>
+ <div><b>اللقب:</b><div class="muted">${esc(u.profile_title||'بدون لقب')}</div></div><div><b>عدد مرات الدخول:</b><div class="muted">${esc(u.login_count??0)}</div></div>
+ <div><b>آخر مرة فتح فيها الموقع:</b><div class="muted">${esc(formatLastSeen(u.last_seen_at))}</div></div></div></div>
+ </div>`;
+}
+function toggleDetails(id){$('d-'+id)?.classList.toggle('open');}
+function visibleTitleList(u){const all=titleList(u.profile_title);if(u.visible_titles==null)return all;const chosen=new Set(titleList(u.visible_titles));return all.filter(t=>chosen.has(t));}
+
+async function changeRole(id,role){
+ const u=users.find(x=>String(x.id)===String(id));if(!u||u.is_owner_admin)return show('mainStatus','لا يمكن تغيير صلاحية الأدمن المالك.','err');
+ if(!confirm('تأكيد تحويل '+nameOf(u)+' إلى '+(role==='admin'?'أدمن':role==='moderator'?'مشرف':'عضو')+'؟'))return;
+ try{const {data,error}=await sb.rpc('admin_update_user_profile',{p_user_id:id,p_name:u.name??u.full_name??null,p_phone:u.phone??u.phone_number??null,p_title:u.profile_title??null,p_role:role});if(error)throw error;if(data?.error)throw new Error(data.error);show('mainStatus','تم تغيير الصلاحية فقط ✅','ok');await loadUsers();}
+ catch(e){show('mainStatus','لم يتم تغيير الصلاحية: '+(e.message||'خطأ'),'err');}
+}
+async function approve(id){try{const {error}=await sb.rpc('admin_approve_user',{p_user_id:id});if(error)throw error;show('mainStatus','تم قبول/إعادة تفعيل الحساب ✅','ok');await loadUsers();}catch(e){show('mainStatus','تعذر القبول: '+e.message,'err');}}
+async function rejectUser(id){
+ const note=prompt('اكتب سبب الرفض أو السحب الذي سيظهر للمستخدم:','تم إيقاف الحساب مؤقتًا. برجاء التواصل مع الإدارة.');
+ if(note===null)return;if(!note.trim())return alert('اكتب سببًا أولًا.');
+ try{const {error}=await sb.rpc('admin_reject_user',{p_user_id:id,p_note:note.trim()});if(error)throw error;show('mainStatus','تم رفض/إيقاف الحساب وإرسال السبب للمستخدم ✅','ok');await loadUsers();}catch(e){show('mainStatus','تعذر تنفيذ الرفض: '+e.message,'err');}
+}
+async function deleteUser(id){
+ const u=users.find(x=>String(x.id)===String(id));if(!u||u.is_owner_admin)return show('mainStatus','لا يمكن حذف الأدمن المالك.','err');
+ if(!confirm('⚠️ سيتم حذف حساب '+nameOf(u)+' نهائيًا. متأكد؟'))return;
+ try{let done=false,firstErr=null;try{const r=await sb.rpc('admin_delete_user',{p_user_id:id});if(!r.error)done=true;else firstErr=r.error;}catch(_){}
+ if(!done){const r=await invokeAuthedFunction('admin-user-management',{action:'delete',user_id:id});if(r.error)throw firstErr||r.error;}
+ show('mainStatus','تم حذف الحساب نهائيًا ✅','ok');await loadUsers();}catch(e){show('mainStatus','تعذر حذف الحساب: '+(e.message||'تأكد من نشر دالة الإدارة.'),'err');}
+}
+
+
+
+async function openTemporaryAccount(){
+ $('modalRoot').innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
+ <div class="modal-head"><h2>${ic('hourglass')}حساب مؤقت</h2><button class="close" onclick="closeModal()">×</button></div>
+ <p class="muted">بنفس إعدادات موقعك: البريد وكلمة السر فقط.</p>
+ <div class="field"><label>البريد الإلكتروني</label><input id="tempEmail" type="email" placeholder="example@gmail.com"></div>
+ <div class="field"><label>كلمة السر</label><input id="tempPassword" type="password" minlength="8" placeholder="8 أحرف على الأقل"></div>
+ <div class="field"><label>رسالة/ملاحظة اختيارية</label><textarea id="tempNote" placeholder="اختياري"></textarea></div>
+ <div class="actions"><button onclick="createTemporaryRequest()">${ic('hourglass')}إنشاء الحساب المؤقت</button><button class="btn-gray" onclick="closeModal()">إلغاء</button></div>
+ <div id="tempStatus" class="status"></div>
+ </div></div>`;
+}
+async function createTemporaryRequest(){
+ const email=$('tempEmail').value.trim(),password=$('tempPassword').value,note=$('tempNote').value.trim();
+ if(!email||!password)return show('tempStatus','البريد وكلمة السر مطلوبان.','err');
+ if(password.length<8)return show('tempStatus','كلمة السر يجب أن تكون 8 أحرف على الأقل.','err');
+ try{
+   const r=await invokeAuthedFunction('admin-create-pending-user',{email,password,note});
+   if(r.error)throw new Error(r.error.message||'تعذر إنشاء الطلب.');
+   if(r.data?.error)throw new Error(r.data.error);
+   show('tempStatus','تم إنشاء الحساب المؤقت وإضافته للطلبات ✅','ok');
+   setTimeout(async()=>{closeModal();await loadUsers();},700);
+ }catch(e){show('tempStatus','لم يتم إنشاء الحساب: '+(e.message||'تأكد من نشر Edge Function باسم admin-create-pending-user.'),'err');}
+}
+async function loadTemporaryRequests(){
+ try{
+  // Match the real site flow: temporary accounts are created first, then the user
+  // submits a temporary_completion request after completing their data.
+  window.tempRequests=(window.requests||[]).filter(r=>r.request_type==='temporary_completion' && r.status==='pending');
+ }catch(e){window.tempRequests=[];}
+}
+function renderTemporaryRequests(){
+ const reqs=window.tempRequests||[];
+ if(!reqs.length)return '';
+ return `<div class="card"><div class="top"><h2>${ic('hourglass')}طلبات إكمال الحسابات المؤقتة</h2><span class="badge off">${reqs.length} طلب</span></div>`+
+ reqs.map(r=>{
+  const u=users.find(x=>String(x.id)===String(r.user_id))||{};
+  return `<div class="user"><div class="name">${esc(nameOf(u)||'حساب مؤقت')}</div><div class="email">${esc(u.email||'بدون بريد')}</div><div class="meta">${esc(phoneOf(u)||'')} • ${esc(r.created_at?new Date(r.created_at).toLocaleString('ar-EG'):'')}</div>${r.note?`<div class="small" style="margin-top:7px">${esc(r.note)}</div>`:''}<div class="actions"><button class="btn-green" onclick="approveTemporary('${esc(r.id)}','${esc(r.user_id||'')}')">${ic('check')}موافقة</button><button class="btn-red" onclick="rejectTemporary('${esc(r.id)}','${esc(r.user_id||'')}')">${ic('block')}رفض وكتابة رسالة</button></div></div>`;
+ }).join('')+'</div>';
+}
+async function approveTemporary(requestId,userId){
+ if(!confirm('تأكيد الموافقة على إكمال الحساب؟'))return;
+ try{
+  const a=await sb.rpc('admin_approve_user',{p_user_id:userId});
+  if(a.error)throw a.error;
+  const u=await sb.from('account_requests').update({status:'approved',reviewed_at:new Date().toISOString()}).eq('id',requestId);
+  if(u.error)throw u.error;
+  show('mainStatus','تمت الموافقة على الحساب المؤقت ✅','ok');await loadUsers();
+ }catch(e){show('mainStatus','تعذر الموافقة: '+(e.message||'خطأ'),'err');}
+}
+async function rejectTemporary(requestId,userId){
+ const reason=prompt('اكتب رسالة الرفض التي ستظهر لصاحب الحساب:','تم رفض إكمال الحساب من الإدارة.');
+ if(reason===null)return;if(!reason.trim())return alert('اكتب رسالة الرفض.');
+ try{
+  const a=await sb.rpc('admin_reject_user',{p_user_id:userId,p_note:reason.trim()});
+  if(a.error)throw a.error;
+  const u=await sb.from('account_requests').update({status:'rejected',note:reason.trim(),reviewed_at:new Date().toISOString()}).eq('id',requestId);
+  if(u.error)throw u.error;
+  show('mainStatus','تم رفض الحساب وحفظ رسالة الرفض ✅','ok');await loadUsers();
+ }catch(e){show('mainStatus','تعذر الرفض: '+(e.message||'خطأ'),'err');}
+}
+async function loadMessageHistory(){
+ const box=$('messageHistory');if(!box)return;
+ try{
+  const r=await sb.from('user_messages').select('*').order('created_at',{ascending:false});
+  if(r.error)throw r.error;const rows=r.data||[];
+  if(!rows.length){box.innerHTML='<p>لا توجد رسائل مرسلة.</p>';return;}
+  const ids=rows.map(x=>x.id);
+  let reads=[];
+  const rr=await sb.rpc('midad_admin_user_message_reads',{p_message_ids:ids});
+  if(rr.error)throw rr.error;
+  reads=(rr.data||[]).map(x=>({message_id:x.message_id,user_id:x.user_id,read_at:x.read_at,view_count:Number.isFinite(Number(x.view_count))?Number(x.view_count):1}));
+  const people=users.filter(u=>!u.is_owner_admin);
+  box.innerHTML=rows.map(m=>{
+   const rc=reads.filter(x=>String(x.message_id)===String(m.id));
+   const targetUsers=m.target_user_id ? people.filter(u=>String(u.id)===String(m.target_user_id)) : people;
+   const seenIds=new Set(rc.map(x=>String(x.user_id)));
+   const unseenUsers=targetUsers.filter(u=>!seenIds.has(String(u.id)));
+   const seenNames=rc.map(x=>{
+    const u=users.find(u=>String(u.id)===String(x.user_id));
+    const dt=x.read_at?new Date(x.read_at):null;
+    const stamp=dt && !Number.isNaN(dt.getTime())?` — ${dt.toLocaleString('ar-EG')}`:'';
+    return u?`${nameOf(u)}${stamp}`:'مستخدم';
+   });
+   const unseenNames=unseenUsers.map(u=>nameOf(u));
+   const target=m.target_user_id?'مستخدم محدد':'جميع الحسابات';
+   return `<div class="user"><div class="top"><div><div class="name">${esc(m.title||'بدون عنوان')}</div><div class="meta">${target} • ${m.created_at?esc(new Date(m.created_at).toLocaleString('ar-EG')):''}</div></div><button class="btn-red" onclick="deleteMessage('${esc(m.id)}')">${ic('trash')}حذف</button></div><div class="small" style="margin-top:7px;white-space:pre-wrap">${esc(m.body||'')}</div><div class="badges"><span class="badge">${ic('eye')}شافها ${rc.length}</span><span class="badge off">${ic('clock')}لسه مشافهاش ${unseenUsers.length}</span></div><div class="small" style="margin-top:8px"><b>شافها:</b> ${esc(seenNames.length?seenNames.join('، '):'ولا حد لسه')}</div><div class="small" style="margin-top:5px"><b>لسه مشافهاش:</b> ${esc(unseenNames.length?unseenNames.join('، '):'الكل شافها')}</div></div>`;
+  }).join('');
+ }catch(e){box.innerHTML='';show('historyStatus','تعذر تحميل سجل الرسائل: '+(e.message||'شغّل SQL_NOTIFICATION_V3.sql في Supabase ثم أعد فتح الصفحة.'),'err');}
+}
+async function deleteMessage(id){
+ if(!confirm('حذف الرسالة؟ لن تظهر للمستخدم بعد الحذف.'))return;
+ try{const r=await sb.from('user_messages').delete().eq('id',id);if(r.error)throw r.error;show('historyStatus','تم حذف الرسالة ولن تظهر للمستخدمين بعد الآن ✅','ok');await loadMessageHistory();}catch(e){show('historyStatus','تعذر حذف الرسالة: '+e.message,'err');}
+}
+async function deleteAllMessages(){
+ if(!confirm('⚠️ حذف كل الرسائل؟ الحذف سيمنع ظهورها للمستخدمين.'))return;
+ try{const r=await sb.from('user_messages').delete().not('id','is',null);if(r.error)throw r.error;show('historyStatus','تم حذف كل الرسائل ولن تظهر للمستخدمين بعد الآن ✅','ok');await loadMessageHistory();}catch(e){show('historyStatus','تعذر حذف الرسائل: '+e.message,'err');}
+}
+
+async function readEdgeError(result, fallback){
+  if(result?.data?.error) return String(result.data.error);
+  if(result?.error?.context){
+    try{ const payload=await result.error.context.json(); if(payload?.error) return String(payload.error); }catch(_){}
+  }
+  return String(result?.error?.message||fallback||'خطأ غير معروف');
+}
+
+function openInstantAccount(){
+ const themeEntries=Object.entries(THEME_FALLBACK);
+ $('modalRoot').innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
+ <div class="modal-head"><h2>${ic('bolt')}إنشاء حساب فوري</h2><button class="close" onclick="closeModal()">×</button></div>
+ <p class="muted">الحساب يتنشأ فورًا، حالته <b>approved</b> تلقائيًا، ولا يدخل في طلبات الموافقة.</p>
+ <div class="formgrid">
+  <div><label>اسم المستخدم</label><input id="quickName" placeholder="مثال: Ahmed"></div>
+  <div><label>البريد الإلكتروني</label><input id="quickEmail" type="email" placeholder="example@gmail.com"></div>
+  <div><label>رقم الهاتف</label><input id="quickPhone" placeholder="01xxxxxxxxx"></div>
+  <div><label>كلمة السر</label><input id="quickPassword" type="password" minlength="8" placeholder="8 أحرف على الأقل"></div>
+ </div>
+ <div class="field"><label>نوع كلمة السر</label>
+  <select id="quickPasswordMode"><option value="permanent">نهائية — يدخل بها عادي</option><option value="temporary">مؤقتة — يغيرها إجباريًا عند أول دخول</option></select>
+ </div>
+ <div class="field"><label>الصلاحية</label><select id="quickRole"><option value="member">عضو</option><option value="moderator">مشرف</option><option value="admin">أدمن ذهبي</option></select></div>
+
+ <div class="field"><label>${ic('star')}الألقاب — اختار أي عدد</label>
+ <div class="title-grid" id="quickTitleGrid">${TITLE_PRESETS.map(t=>`<button type="button" class="title-option" data-quick-title="${esc(t)}" onclick="toggleQuickTitle(this)">✦ ${esc(t)}</button>`).join('')}</div>
+ <div style="display:flex;gap:7px;margin-top:8px"><input id="quickCustomTitle" placeholder="لقب من عندك"><button type="button" onclick="addQuickTitle()">إضافة</button></div>
+ <div id="quickSelectedTitles" class="chips" style="margin-top:8px"></div></div>
+
+ <div class="field"><label>${ic('palette')}السمة الأساسية</label>
+ <select id="quickTheme"><option value="">السمة الافتراضية</option>${themeEntries.map(([k,n])=>`<option value="${esc(k)}">${esc(n)}</option>`).join('')}</select>
+ </div><div class="field"><label>زر السمات</label><select id="quickThemeButton"><option value="true">متاح للمستخدم</option><option value="false">غير متاح للمستخدم</option></select></div>
+ <div class="field"><label>${ic('palette')}السمات المسموح بها</label>
+ <div class="theme-grid" id="quickThemeGrid">${themeEntries.map(([k,n])=>`<label><input type="checkbox" value="${esc(k)}" checked> ${esc(n)}</label>`).join('')}</div>
+ <label style="display:flex;gap:7px;align-items:center;margin-top:9px"><input id="quickRestrictThemes" type="checkbox" style="width:auto"> السماح بهذه السمات فقط</label></div>
+
+ <div class="actions"><button onclick="createInstantAccount()">${ic('bolt')}إنشاء الحساب الآن</button><button class="btn-gray" onclick="closeModal()">إلغاء</button></div>
+ <div id="quickStatus" class="status"></div>
+ </div></div>`;
+ window.quickTitles=[];
+}
+
+function toggleQuickTitle(btn){
+ const t=btn.getAttribute('data-quick-title');if(!t)return;
+ window.quickTitles=window.quickTitles||[];
+ if(window.quickTitles.includes(t))window.quickTitles=window.quickTitles.filter(x=>x!==t);
+ else window.quickTitles.push(t);
+ btn.classList.toggle('active');
+ $('quickSelectedTitles').innerHTML=window.quickTitles.map(x=>`<span class="chip selected-title">✦ ${esc(x)}</span>`).join('');
+}
+function addQuickTitle(){
+ const input=$('quickCustomTitle'),v=input.value.trim();if(!v)return;
+ window.quickTitles=window.quickTitles||[];
+ if(!window.quickTitles.includes(v))window.quickTitles.push(v);
+ input.value='';
+ $('quickSelectedTitles').innerHTML=window.quickTitles.map(x=>`<span class="chip selected-title">✦ ${esc(x)}</span>`).join('');
+}
+
+async function createInstantAccount(){
+ const name=$('quickName').value.trim(),email=$('quickEmail').value.trim(),phone=$('quickPhone').value.trim();
+ const password=$('quickPassword').value,mode=$('quickPasswordMode').value,role=$('quickRole').value;
+ const titles=(window.quickTitles||[]).join('، ');
+ const themeId=$('quickTheme').value||null;
+ const allowedThemes=[...document.querySelectorAll('#quickThemeGrid input:checked')].map(x=>x.value);
+ const restrictThemes=$('quickRestrictThemes').checked,themeButton=$('quickThemeButton').value==='true';
+ if(!name||!email||!password)return show('quickStatus','اكتب الاسم والبريد وكلمة السر.','err');
+ if(password.length<8)return show('quickStatus','كلمة السر يجب أن تكون 8 أحرف على الأقل.','err');
+ if(restrictThemes&&!allowedThemes.length)return show('quickStatus','اختار سمة واحدة على الأقل أو ألغِ تقييد السمات.','err');
+ try{
+  const r=await sb.functions.invoke('admin-create-user',{
+   body:{name,email,phone,password,password_mode:mode,role,profile_title:titles||null,visible_titles:titles||null,
+         theme_key:themeId,allowed_theme_keys:allowedThemes,restrict_themes:restrictThemes,themes_button_enabled:themeButton}
+  });
+  if(r.error) throw new Error(await readEdgeError(r,'تعذر تشغيل admin-create-user.'));
+  if(r.data?.error) throw new Error(r.data.error);
+  show('quickStatus',mode==='temporary'
+    ?'تم إنشاء الحساب فورًا بالألقاب والسمات. كلمة السر مؤقتة وسيُطلب تغييرها عند أول دخول بها ✅'
+    :'تم إنشاء الحساب فورًا بالألقاب والسمات وبكلمة سر نهائية، ولا يحتاج موافقة ✅','ok');
+  setTimeout(async()=>{closeModal();await loadUsers();},1000);
+ }catch(e){show('quickStatus','لم يتم إنشاء الحساب: '+(e.message||'خطأ'),'err');}
+}
+
+async function openEdit(id){
+ const u=users.find(x=>String(x.id)===String(id));if(!u)return;titleSelection=titleList(u.profile_title);pendingAvatarFile=null;
+ await loadDragonUserSettings(id); const ds=dragonUserSettingsCache[id]||{};
+ $('modalRoot').innerHTML=`<div class="modal-back" onclick="if(event.target===this)closeModal()"><div class="modal">
+ <div class="modal-head"><h2>${ic('edit')}تعديل المستخدم</h2><button class="close" onclick="closeModal()">×</button></div>
+ <div class="avatar-edit"><img id="avatarPreview" class="avatar-preview" src="${esc(avatarUrl(u))}" onerror="this.removeAttribute('src')"><div><b>${esc(nameOf(u))}</b><div class="small">اختار صورة جديدة من جهازك أو اترك الصورة الحالية كما هي.</div><label class="file-label">${ic('image')}اختيار صورة<input id="avatarFile" type="file" accept="image/*" onchange="previewAvatar(this)"></label></div></div>
+ <div class="field"><label>الاسم</label><input id="editName" value="${esc(u.full_name||u.name||'')}"></div>
+ <div class="field"><label>رقم التليفون</label><input id="editPhone" value="${esc(u.phone_number||u.phone||'')}"></div>
+ <div class="field"><label>الألقاب</label><div class="title-grid" id="titleGrid">${TITLE_PRESETS.map(t=>`<button type="button" class="title-option ${titleSelection.includes(t)?'active':''}" onclick="toggleTitle('${esc(t)}',this)">✦ ${esc(t)}</button>`).join('')}</div>
+ <div style="display:flex;gap:7px;margin-top:8px"><input id="customTitle" placeholder="لقب من عندك"><button onclick="addCustomTitle()">إضافة</button></div>
+ <div id="selectedTitles" class="chips" style="margin-top:8px">${renderSelectedTitles()}</div></div>
+ <div class="field"><label>الألقاب التي تظهر بجانب الاسم</label><div id="visibleBox">${renderVisiblePicker(u)}</div></div>
+ ${u.is_owner_admin?'':`<div class="field"><label>الصلاحية</label><select id="editRole"><option value="member" ${u.role==='member'||u.role==='user'||!u.role?'selected':''}>عضو</option><option value="moderator" ${u.role==='moderator'?'selected':''}>مشرف</option><option value="admin" ${u.role==='admin'||u.role==='super_admin'?'selected':''}>أدمن ذهبي</option></select></div>`}
+ <div class="field"><label>تغيير كلمة السر</label><input id="editPassword" type="password" minlength="8" placeholder="اتركها فارغة لعدم التغيير"><select id="editPasswordMode" style="margin-top:7px"><option value="permanent">كلمة سر نهائية — يدخل بها عادي</option><option value="temporary">كلمة سر مؤقتة — يغيرها إجباريًا عند أول دخول</option></select><div class="small">لن تتغير كلمة السر إذا تركت الخانة فارغة.</div></div>
+ <div class="field"><label>🐉 إتاحة التنين لهذا العضو</label><select id="dragonAllowed"><option value="true" ${ds.allowed!==false?'selected':''}>التنين متاح</option><option value="false" ${ds.allowed===false?'selected':''}>التنين غير متاح</option></select></div>
+ <div class="field"><label>زر إتاحة التنين للعضو</label><select id="dragonControl"><option value="true" ${ds.control_enabled===true?'selected':''}>ظاهر للعضو</option><option value="false" ${ds.control_enabled!==true?'selected':''}>مخفي عن العضو</option></select><div class="small">الزر يسمح للعضو بإخفاء/إظهار التنين لنفسه فقط.</div></div>
+ <div class="field"><label>حالة التنين لهذا العضو عند الدخول</label><select id="dragonStartEnabled"><option value="true" ${ds.user_enabled!==false?'selected':''}>يظهر تلقائيًا عند الدخول</option><option value="false" ${ds.user_enabled===false?'selected':''}>يحتاج تفعيله من الملف الشخصي</option></select><div class="small">لو اخترت التفعيل من الملف الشخصي، يبدأ التنين مخفيًا حتى يفعّله العضو.</div></div>
+ <div class="field"><label>جهاز ظهور التنين لهذا العضو</label><select id="dragonUserDevice"><option value="both" ${(ds.device_mode||'both')==='both'?'selected':''}>الموبايل والكمبيوتر</option><option value="mobile" ${(ds.device_mode||'both')==='mobile'?'selected':''}>الموبايل فقط</option><option value="desktop" ${(ds.device_mode||'both')==='desktop'?'selected':''}>الكمبيوتر فقط</option></select></div>
+ <div class="field"><label>${ic('palette')}زر السمات</label><select id="editThemeButton"><option value="true">متاح للمستخدم</option><option value="false">غير متاح للمستخدم</option></select><div class="small">لو متاح، يظهر زر السمات للمستخدم.</div></div>
+ <div class="actions"><button onclick="saveEdit('${esc(u.id)}')">${ic('check')}حفظ كل التعديلات</button><button class="btn-gray" onclick="closeModal()">إلغاء</button></div>
+ <div id="editStatus" class="status"></div></div></div>`;
+}
+function renderVisiblePicker(u){const all=titleSelection,vis=new Set(visibleTitleList(u));if(!all.length)return '<div class="small">أضف لقبًا أولًا.</div>';return `<div class="title-grid">${all.map(t=>`<button type="button" class="title-option ${vis.has(t)?'active':''}" data-vis="${esc(t)}" onclick="this.classList.toggle('active')">✦ ${esc(t)}</button>`).join('')}</div>`;}
+function toggleTitle(t,b){if(titleSelection.includes(t))titleSelection=titleSelection.filter(x=>x!==t);else titleSelection.push(t);b.classList.toggle('active');$('selectedTitles').innerHTML=renderSelectedTitles();$('visibleBox').innerHTML=renderVisiblePicker({profile_title:titleSelection.join('، '),visible_titles:null});}
+function renderSelectedTitles(){return titleSelection.map((x,i)=>`<span class="chip selected-title">✦ ${esc(x)} <button type="button" onclick="removeSelectedTitle(${i})" style="padding:1px 6px;border-radius:8px;background:#fee2e2;color:#991b1b;margin-right:4px">×</button></span>`).join('');}
+function removeSelectedTitle(i){titleSelection.splice(i,1);$('selectedTitles').innerHTML=renderSelectedTitles();$('visibleBox').innerHTML=renderVisiblePicker({profile_title:titleSelection.join('، '),visible_titles:null});document.querySelectorAll('#titleGrid .title-option').forEach(b=>{const t=b.getAttribute('onclick')?.match(/toggleTitle\('([^']*)'/)?.[1];if(t)b.classList.toggle('active',titleSelection.includes(t));});}
+function addCustomTitle(){const v=$('customTitle').value.trim();if(!v)return;if(!titleSelection.includes(v))titleSelection.push(v);$('customTitle').value='';$('selectedTitles').innerHTML=renderSelectedTitles();$('visibleBox').innerHTML=renderVisiblePicker({profile_title:titleSelection.join('، '),visible_titles:null});}
+function previewAvatar(inp){const f=inp.files?.[0];if(!f)return;if(!f.type.startsWith('image/'))return alert('اختار صورة فقط.');if(f.size>8*1024*1024)return alert('الصورة يجب ألا تتجاوز 8MB.');pendingAvatarFile=f;const p=$('avatarPreview');p.src=URL.createObjectURL(f);}
+async function uploadAvatar(file,id){const ext=(file.name.split('.').pop()||'jpg').toLowerCase().replace(/[^a-z0-9]/g,'')||'jpg';const path=`users/${id}/${crypto.randomUUID()}.${ext}`;const r=await sb.storage.from('avatars').upload(path,file,{upsert:false,contentType:file.type});if(r.error)throw new Error('رفع الصورة مرفوض من Storage. شغّل SQL المرفق لإصلاح RLS ثم أعد المحاولة.');return path;}
+async function saveEdit(id){
+ const u=users.find(x=>String(x.id)===String(id));if(!u)return;
+ const name=$('editName').value.trim(),phone=$('editPhone').value.trim(),title=titleSelection.join('، ').trim(),role=$('editRole')?.value||u.role||'member';
+ const newPassword=$('editPassword')?.value.trim()||'',passwordMode=$('editPasswordMode')?.value||'permanent',themeButton=$('editThemeButton')?.value==='true';
+ const dragonAllowed=$('dragonAllowed')?.value==='true', dragonControl=$('dragonControl')?.value==='true', dragonDevice=$('dragonUserDevice')?.value||'both';
+ if(!name)return show('editStatus','اكتب الاسم أولًا.','err');
+ if(newPassword&&newPassword.length<8)return show('editStatus','كلمة السر يجب أن تكون 8 أحرف على الأقل.','err');
+ const vis=[...document.querySelectorAll('#visibleBox [data-vis].active')].map(x=>x.getAttribute('data-vis')).filter(Boolean);
+ const btn=document.querySelector('#modalRoot .actions button');if(btn)btn.disabled=true;
+ try{
+  let avatarPath=u.avatar_path||u.avatar_url||null;
+  if(pendingAvatarFile)avatarPath=await uploadAvatar(pendingAvatarFile,id);
+  const {data,error}=await sb.rpc('admin_update_user_profile',{p_user_id:id,p_name:name,p_phone:phone||null,p_title:title||null,p_role:u.is_owner_admin?u.role:role});
+  if(error)throw error;if(data?.error)throw new Error(data.error);
+  if(avatarPath&&avatarPath!==(u.avatar_path||u.avatar_url||null)){
+    const r=await sb.from('profiles').update({avatar_path:avatarPath}).eq('id',id);if(r.error)throw r.error;
+  }
+  const vr=await sb.rpc('admin_set_visible_titles',{p_user_id:id,p_visible_titles:vis.join('، ')});if(vr.error)throw vr.error; const tp=await sb.from('user_theme_preferences').select('id').eq('user_id',id).maybeSingle(); if(tp.error)throw tp.error; if(tp.data){const tr=await sb.from('user_theme_preferences').update({themes_button_enabled:themeButton}).eq('id',tp.data.id);if(tr.error)throw tr.error;}else{const tr=await sb.from('user_theme_preferences').insert({user_id:id,themes_button_enabled:themeButton,restricted_theme_selection:false});if(tr.error)throw tr.error;}
+  await saveDragonUserSettings(id);
+  if(newPassword){
+    const rr=await invokeAuthedFunction('admin-set-password',{user_id:id,new_password:newPassword,password_mode:passwordMode});
+    if(rr.error) throw new Error(await readEdgeError(rr,'تعذر تشغيل admin-set-password.'));
+    if(rr.data?.error)throw new Error(rr.data.error);
+  }
+  closeModal();
+  show('mainStatus',newPassword
+    ?(passwordMode==='temporary'?'تم حفظ التعديلات وتعيين كلمة سر مؤقتة. سيُطلب من المستخدم تغييرها عند أول دخول بها ✅':'تم حفظ التعديلات وتغيير كلمة السر بنجاح ✅')
+    :'تم حفظ الاسم والتليفون والألقاب والصورة بدون تغيير البريد أو كلمة السر ✅','ok');
+  await loadUsers();
+ }catch(e){show('editStatus','لم يتم الحفظ: '+(e.message||'خطأ'),'err');if(btn)btn.disabled=false;}
+ finally{pendingAvatarFile=null;}
+}
+
+async function openThemes(id){
+ const u=users.find(x=>String(x.id)===String(id));if(!u)return;
+ $('modalRoot').innerHTML=`<div class="modal-back"><div class="modal"><div class="modal-head"><h2>${ic('palette')}سمات المستخدم</h2><button class="close" onclick="closeModal()">×</button></div><p class="muted">جاري تحميل السمات...</p></div></div>`;
+ try{
+  const [tr,pr,ar]=await Promise.all([sb.from('platform_themes').select('*').order('sort_order',{ascending:true}),sb.from('user_theme_preferences').select('*').eq('user_id',id).maybeSingle(),sb.from('user_allowed_themes').select('theme_id').eq('user_id',id)]);
+  let themes=tr.error?[]:(tr.data||[]);if(!themes.length)themes=Object.entries(THEME_FALLBACK).map(([id,name],i)=>({id,display_name:name,sort_order:i}));
+  const pref=pr.data||{},allowed=(ar.data||[]).map(x=>String(x.theme_id));
+  $('modalRoot').innerHTML=`<div class="modal-back"><div class="modal"><div class="modal-head"><h2>${ic('palette')}سمات ${esc(nameOf(u))}</h2><button class="close" onclick="closeModal()">×</button></div>
+  <div class="field"><label>السمة الأساسية التي يفتح عليها</label><select id="themeMain"><option value="">السمة الافتراضية</option>${themes.map(t=>`<option value="${esc(t.id)}" ${String(pref.theme_id||'')===String(t.id)?'selected':''}>${esc(t.display_name||t.name||THEME_FALLBACK[t.id]||t.id)}</option>`).join('')}</select></div>
+  <div class="field"><label>إتاحة الزر العلوي للسمات</label><select id="themeButton"><option value="false" ${!pref.themes_button_enabled?'selected':''}>لا</option><option value="true" ${pref.themes_button_enabled?'selected':''}>نعم</option></select></div>
+  <div class="field"><label>إتاحة الزر السفلي للسمات</label><select id="themeBottomButton"><option value="false" ${!pref.themes_bottom_button_enabled?'selected':''}>لا</option><option value="true" ${pref.themes_bottom_button_enabled?'selected':''}>نعم</option></select></div>
+  <div class="field"><label>تحديد السمات المسموح بها</label><select id="themeRestrict"><option value="false" ${!pref.restricted_theme_selection?'selected':''}>لا — كل السمات</option><option value="true" ${pref.restricted_theme_selection?'selected':''}>نعم — المسموح بها فقط</option></select></div>
+  <div class="field"><label>اختار السمات المسموح بها</label><div class="theme-grid">${themes.map(t=>`<label><input type="checkbox" value="${esc(t.id)}" ${allowed.includes(String(t.id))?'checked':''}>${esc(t.display_name||t.name||THEME_FALLBACK[t.id]||t.id)}</label>`).join('')}</div></div>
+  <div class="actions"><button onclick="saveThemes('${esc(id)}')">${ic('check')}حفظ إعدادات السمات</button><button class="btn-gray" onclick="closeModal()">إلغاء</button></div><div id="themeStatus" class="status"></div></div></div>`;
+ }catch(e){$('modalRoot').innerHTML=`<div class="modal-back"><div class="modal"><h2>${ic('palette')}السمات</h2><div class="status err">تعذر تحميل السمات: ${esc(e.message||'خطأ')}</div><button onclick="closeModal()">إغلاق</button></div></div>`;}
+}
+async function saveThemes(id){
+ const themeId=$('themeMain').value||null,button=$('themeButton').value==='true',bottomButton=$('themeBottomButton').value==='true',restrict=$('themeRestrict').value==='true',allowed=[...document.querySelectorAll('.theme-grid input:checked')].map(x=>x.value);
+ try{
+  const old=await sb.from('user_theme_preferences').select('id').eq('user_id',id).maybeSingle();if(old.error)throw old.error;
+  const payload={user_id:id,theme_id:themeId,themes_button_enabled:button,themes_bottom_button_enabled:bottomButton,restricted_theme_selection:restrict};
+  let r=old.data?await sb.from('user_theme_preferences').update(payload).eq('id',old.data.id):await sb.from('user_theme_preferences').insert(payload);if(r.error)throw r.error;
+  const del=await sb.from('user_allowed_themes').delete().eq('user_id',id);if(del.error)throw del.error;
+  if(restrict&&allowed.length){const ins=await sb.from('user_allowed_themes').insert(allowed.map(x=>({user_id:id,theme_id:x})));if(ins.error)throw ins.error;}
+  closeModal();show('mainStatus','تم حفظ إعدادات السمات للمستخدم ✅','ok');
+ }catch(e){show('themeStatus','تعذر حفظ السمات: '+(e.message||'خطأ'),'err');}
+}
+
+function closeModal(){$('modalRoot').innerHTML='';pendingAvatarFile=null;}
+$('messageMedia').addEventListener('change',function(){const f=this.files?.[0],box=$('messageMediaPreview');box.innerHTML='';if(!f)return;if(f.size>25*1024*1024){alert('حجم المرفق يجب ألا يتجاوز 25MB.');this.value='';return;}const url=URL.createObjectURL(f);box.innerHTML=f.type.startsWith('video/')?`<div class="media-preview"><video controls playsinline src="${esc(url)}"></video></div>`:`<div class="media-preview"><img src="${esc(url)}" alt=""></div>`;});
+
+async function sendMessage(){
+ const target=$('messageUser').value,title=$('messageTitle').value.trim(),body0=$('messageBody').value.trim(),file=$('messageMedia').files?.[0]||null;
+ if(!title)return show('messageStatus','اكتب عنوان الرسالة.','err');if(!body0&&!file)return show('messageStatus','اكتب نص الرسالة أو اختر صورة/فيديو.','err');
+ if(file&&file.size>25*1024*1024)return show('messageStatus','المرفق أكبر من 25MB.','err');
+ const btn=document.querySelector('#messageStatus')?.previousElementSibling;try{
+  let body=body0,marker='';
+  if(file){if(!(file.type.startsWith('image/')||file.type.startsWith('video/')))throw new Error('نوع المرفق غير مدعوم.');const ext=(file.name.split('.').pop()||'bin').toLowerCase();const type=file.type.startsWith('video/')?'video':'image';const path=`messages/${crypto.randomUUID()}.${ext}`;const up=await sb.storage.from('admin-messages').upload(path,file,{upsert:false,contentType:file.type});if(up.error)throw up.error;marker=`[[MIDAD_MEDIA|${type}|${encodeURIComponent(path)}]]`;}
+  if(marker)body=(body?body+'\n\n':'')+marker;
+  const vr=$('messageViews').value,max_views=vr==='unlimited'?null:Math.max(1,parseInt(vr,10)||1);
+  const payload={target_user_id:target==='all'?null:target,title,body,max_views,is_active:true};
+  const {error}=await sb.from('user_messages').insert(payload);if(error)throw error;
+  // Phone push notifications are disabled in this Android build; the message remains in-app.
+
+  show('messageStatus',target==='all'?'تم إرسال الرسالة لجميع الحسابات مع المرفق ✅':'تم إرسال الرسالة للحساب المحدد مع المرفق ✅','ok');
+  $('messageTitle').value='';$('messageBody').value='';$('messageMedia').value='';$('messageMediaPreview').innerHTML='';
+ }catch(e){show('messageStatus','تعذر إرسال الرسالة: '+(e.message||'خطأ'),'err');}
+}
+
+// تأثير ميل 3D خفيف عند تحريك الماوس فوق بطاقات المستخدمين والإحصائيات
+(function(){
+ function tilt(e){
+  const el=e.currentTarget,r=el.getBoundingClientRect();
+  const x=(e.clientX-r.left)/r.width-.5,y=(e.clientY-r.top)/r.height-.5;
+  el.style.transform=`translateY(-3px) rotateX(${(-y*4).toFixed(2)}deg) rotateY(${(x*4).toFixed(2)}deg)`;
+ }
+ function reset(e){e.currentTarget.style.transform='';}
+ document.body.addEventListener('mouseover',function(e){
+  const el=e.target.closest('.user, .stat');
+  if(el&&!el._tiltBound){el._tiltBound=true;el.addEventListener('mousemove',tilt);el.addEventListener('mouseleave',reset);}
+ });
+})();
+function staggerCards(container){
+ if(!container)return;
+ [...container.children].forEach((el,i)=>{el.style.animationDelay=(Math.min(i,10)*35)+'ms';});
+}
+
+sb.auth.getSession().then(async({data})=>{if(!data.session)return;const {data:p}=await sb.from('profiles').select('is_owner_admin').eq('id',data.session.user.id).maybeSingle();if(p?.is_owner_admin){currentUserId=data.session.user.id;$('loginView').classList.add('hidden');$('appView').classList.remove('hidden');Promise.all([loadUsers(),loadDragonAdminSettings()]);}});
+</script>
+</body>
+</html>
