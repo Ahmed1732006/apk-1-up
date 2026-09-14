@@ -6,10 +6,10 @@ let s=readFileSync(p,'utf8');
 s=s.replace(/import android\.view\.ViewConfiguration;\n/,'');
 s=s.replace(/private PdfPageView pageView;/,'private PdfDocumentView pageView;');
 s=s.replace(/pageView = new PdfPageView\(\);/,'pageView = new PdfDocumentView();');
-s=s.replace(/\s*pageView\.setPageChangedListener\(p => \{ currentPage = p; updateLabel\(\); \}\);\n            pageView\.loadPage\(\);/,'\n            pageView.loadDocument();');
+s=s.replace(/\s*pageView\.setPageChangedListener\(p => \{ currentPage = p; updateLabel\(\); \}\);\s*pageView\.loadPage\(\);/,'\n            pageView.loadDocument();');
 const start=s.indexOf('    private class PdfPageView extends View {');
 if(start<0) throw new Error('PdfPageView not found');
-const end=s.indexOf('\n    }\n}\n`);',start);
+const end=s.indexOf('\n    }\n}\n',start);
 if(end<0) throw new Error('viewer class end not found');
 const cls=`    private class PdfDocumentView extends View {
         private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
@@ -52,7 +52,6 @@ const cls=`    private class PdfDocumentView extends View {
         private float maxWidth(){float m=1;for(float w:widths)m=Math.max(m,w);return m;}
         private float gap(){return dp(12);}
         private float h(int i,float s){return heights[i]*s;}
-        private float top(int i,float s){float y=gap();for(int n=0;n<i;n++)y+=h(n,s)+gap();return y;}
         private float totalH(float s){float y=gap();for(int i=0;i<pageCount;i++)y+=h(i,s)+gap();return y;}
         private float centeredLeft(float s){return(getWidth()-maxWidth()*s)/2f;}
         private float maxPanX(){return Math.max(0,(maxWidth()*scale-getWidth())/2f);}
