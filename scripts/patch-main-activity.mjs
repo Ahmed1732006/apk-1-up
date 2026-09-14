@@ -11,7 +11,6 @@ function findMain(dir) {
   }
   return null;
 }
-
 const file = findMain(root);
 if (!file) throw new Error('MainActivity.kt/java was not generated.');
 let text = readFileSync(file, 'utf8');
@@ -28,11 +27,10 @@ if (file.endsWith('.kt')) {
         w.navigationBarColor = android.graphics.Color.rgb(255, 248, 252)
         if (android.os.Build.VERSION.SDK_INT >= 26) w.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         if (android.os.Build.VERSION.SDK_INT >= 29) w.isNavigationBarContrastEnforced = false
-    }
-`;
+    }\n`;
   if (!text.includes('private fun ivSystemBars()')) text = text.replace(/\n}\s*$/, '\n' + bars + '}\n');
-  if (/class\s+MainActivity\s*:\s*BridgeActivity\(\)\s*\{?\s*\}?\s*$/.test(text)) {
-    text = text.replace(/class\s+MainActivity\s*:\s*BridgeActivity\(\)\s*\{?\s*\}?\s*$/, `class MainActivity : BridgeActivity() {
+  if (/class\s+MainActivity\s*:\s*BridgeActivity\(\)\s*\{?\s*}?\s*$/.test(text)) {
+    text = text.replace(/class\s+MainActivity\s*:\s*BridgeActivity\(\)\s*\{?\s*}?\s*$/, `class MainActivity : BridgeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 ${pluginLine}
@@ -60,11 +58,13 @@ ${pluginLine}
       text = text.replace(/(override fun onCreate\(savedInstanceState: Bundle\?\)\s*\{[\s\S]*?super\.onCreate\(savedInstanceState\))/, `$1\n${pluginLine}\n        ivSystemBars()`);
     }
     if (!text.includes('override fun onResume()')) {
-      text = text.replace(/\n}\s*$/, `\n    override fun onResume() {
+      const i = text.lastIndexOf('}');
+      if (i < 0) throw new Error('Cannot append Kotlin onResume.');
+      text = text.slice(0, i) + `    override fun onResume() {
         super.onResume()
         ivSystemBars()
     }
-}\n`);
+` + text.slice(i);
     }
   }
 } else {
@@ -90,7 +90,13 @@ ${pluginLine}
   }
   if (text.includes('protected void onResume()')) text = text.replace('protected void onResume()', 'public void onResume()');
   if (!text.includes('public void onResume()')) {
-    text = text.replace(/\n}\s*$/, '\n    @Override public void onResume() {\n        super.onResume();\n        ivSystemBars();\n    }\n}\n');
+    const i = text.lastIndexOf('}');
+    if (i < 0) throw new Error('Cannot append Java onResume.');
+    text = text.slice(0, i) + `    @Override public void onResume() {
+        super.onResume();
+        ivSystemBars();
+    }
+` + text.slice(i);
   }
 }
 
