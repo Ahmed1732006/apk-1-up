@@ -52,12 +52,14 @@ jobs:
           MAIN_JAVA="android/app/src/main/java/com/inthevoid/platform/MainActivity.java"
           HTML="www/app/index.html"
           GRADLE="android/app/build.gradle"
+          ROOT_GRADLE="android/build.gradle"
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           test -s "$PDF_JAVA"
           test -s "$PLUGIN_JAVA"
           test -s "$MAIN_JAVA"
           test -s "$HTML"
           test -s "$GRADLE"
+          test -s "$ROOT_GRADLE"
           test -s "$MANIFEST"
 
           echo '--- Active PDF routing in generated web bundle ---'
@@ -79,7 +81,9 @@ jobs:
 
           require 'implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' "$GRADLE" 'official AndroidX PDF viewer dependency'
           require 'compileSdk = 36' "$GRADLE" 'AndroidX PDF compile SDK'
+          require 'compileSdkExtension = 19' "$GRADLE" 'AndroidX PDF SDK extension 19'
           require 'minSdkVersion 28' "$GRADLE" 'AndroidX PDF minimum SDK'
+          require 'com.android.tools.build:gradle:8.9.1' "$ROOT_GRADLE" 'Android Gradle plugin 8.9.1+'
           require 'public void openUrl(PluginCall call)' "$PLUGIN_JAVA" 'native URL bridge'
           require 'downloadAndValidatePdf' "$PLUGIN_JAVA" 'complete PDF download pipeline'
           require 'containsPdfHeader' "$PLUGIN_JAVA" 'PDF signature validation'
@@ -139,6 +143,8 @@ jobs:
           cache: gradle
       - name: Setup Android SDK
         uses: android-actions/setup-android@v3
+        with:
+          packages: tools platform-tools platforms;android-36-ext19
       - name: Validate release signing secrets
         env:
           ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
