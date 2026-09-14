@@ -6,15 +6,15 @@ if (!existsSync(htmlPath)) throw new Error('www/app/index.html missing.');
 
 let html = readFileSync(htmlPath, 'utf8');
 
-// The older PDF patch can leave the previous downloadMaterial() tail behind.
-// Replace the whole function in one deterministic operation so there can be
-// never be an orphan `try/await` block that prevents the SPA from booting.
-const functionRegex = /function\s+downloadMaterial\s*\([^)]*\)\s*\{[\s\S]*?\n\s*function\s+downloadFile/;
+// Replace the complete generated downloadMaterial() function, including an
+// optional existing `async` prefix, so the final bundle can never contain
+// `async async function` or an orphan try/await tail.
+const functionRegex = /(?:async\s+)?function\s+downloadMaterial\s*\([^)]*\)\s*\{[\s\S]*?\n\s*function\s+downloadFile/;
 if (!functionRegex.test(html)) {
   throw new Error('Could not locate downloadMaterial() before downloadFile().');
 }
 
-const replacement = `function downloadMaterial(item) {
+const replacement = `async function downloadMaterial(item) {
             const path = item?.filePath || item?.fileData;
             const fileName = item?.fileName || 'document.pdf';
             if (!path) {
@@ -46,8 +46,6 @@ const replacement = `function downloadMaterial(item) {
 
         function downloadFile`;
 
-// The function must be async because it awaits Supabase/native bridge work.
-const asyncReplacement = replacement.replace('function downloadMaterial(item)', 'async function downloadMaterial(item)');
-html = html.replace(functionRegex, asyncReplacement);
+html = html.replace(functionRegex, replacement);
 writeFileSync(htmlPath, html, 'utf8');
 console.log('Final PDF web route applied: one valid async downloadMaterial() function.');
