@@ -28,13 +28,9 @@ if (existsSync(gradle)) {
     text = text.slice(0, deps) + 'dependencies {\n    implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' + text.slice(deps + 'dependencies {'.length);
   }
 
-  // Keep signing in a separate android configuration block. This lets Gradle
-  // merge it with Capacitor's generated buildTypes instead of performing
-  // fragile brace-sensitive string surgery inside that generated block.
-  if (!text.includes('inTheVoidRelease')) {
-    text += `\n\n// IN THE VOID release signing configuration\nandroid {\n    signingConfigs {\n        inTheVoidRelease {\n            def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")\n            storeFile file(keystorePath ?: "in_the_void_release.jks")\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""\n            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "in-the-void-release"\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""\n        }\n    }\n    buildTypes {\n        release {\n            signingConfig signingConfigs.inTheVoidRelease\n        }\n    }\n}\n`;
-  }
-
+  // Signing is intentionally handled after assembleRelease by the CI workflow
+  // with Android's official zipalign/apksigner tools. Do not splice signing
+  // blocks into Capacitor's generated build.gradle here.
   writeFileSync(gradle, text);
 }
 
