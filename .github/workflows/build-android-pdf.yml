@@ -165,7 +165,33 @@ jobs:
         run: |
           set -euo pipefail
           ./gradlew assembleRelease --no-daemon
-          test -s app/build/outputs/apk/release/app-release.apk
+
+          RELEASE_DIR="app/build/outputs/apk/release"
+          UNSIGNED="$(find "$RELEASE_DIR" -maxdepth 1 -type f -name '*unsigned*.apk' | head -1 || true)"
+          if [ -z "$UNSIGNED" ]; then
+            UNSIGNED="$RELEASE_DIR/app-release.apk"
+          fi
+          test -s "$UNSIGNED"
+
+          BUILD_TOOLS="$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)"
+          ZIPALIGN="$BUILD_TOOLS/zipalign"
+          APKSIGNER="$BUILD_TOOLS/apksigner"
+          test -x "$ZIPALIGN"
+          test -x "$APKSIGNER"
+
+          ALIGNED="$RELEASE_DIR/app-release-aligned.apk"
+          FINAL="$RELEASE_DIR/app-release.apk"
+          "$ZIPALIGN" -f 4 "$UNSIGNED" "$ALIGNED"
+          "$APKSIGNER" sign \
+            --ks "$ANDROID_KEYSTORE_PATH" \
+            --ks-key-alias "$ANDROID_KEY_ALIAS" \
+            --ks-pass "env:ANDROID_KEYSTORE_PASSWORD" \
+            --key-pass "env:ANDROID_KEY_PASSWORD" \
+            --out "$FINAL" \
+            "$ALIGNED"
+          rm -f "$ALIGNED"
+          if [ "$UNSIGNED" != "$FINAL" ]; then rm -f "$UNSIGNED"; fi
+          test -s "$FINAL"
       - name: Verify APK identity, version and release signature
         shell: bash
         run: |
