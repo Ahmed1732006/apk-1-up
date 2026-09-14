@@ -19,7 +19,7 @@ if (existsSync(gradle)) {
   text = text.replace(/versionCode\s+\d+/g, `versionCode ${versionCode}`);
   text = text.replace(/versionName\s+['"][^'"]+['"]/g, `versionName '${versionName}'`);
   text = text.replace(/applicationId\s+['"][^'"]+['"]/g, `applicationId 'com.inthevoid.platform'`);
-  // The official Jetpack PDF viewer requires Android API 28+.
+  text = text.replace(/compileSdkVersion\s+[^\n]+/g, 'compileSdkVersion 36');
   text = text.replace(/minSdkVersion\s+[^\n]+/g, 'minSdkVersion 28');
   if (!text.includes('androidx.pdf:pdf-viewer-fragment:1.0.0-beta01')) {
     const deps = text.indexOf('dependencies {');
@@ -54,8 +54,6 @@ if (existsSync(gradle)) {
   writeFileSync(gradle, text);
 }
 
-// Preserve the existing launcher icon. CI may generate density/adaptive resources,
-// but this script never replaces the source icon with the splash GIF.
 const iconSource = join(root, 'resources', 'icon.png');
 if (existsSync(iconSource)) {
   for (const dir of ['mipmap-mdpi','mipmap-hdpi','mipmap-xhdpi','mipmap-xxhdpi','mipmap-xxxhdpi']) {
@@ -71,7 +69,6 @@ for (const name of readdirSync(root)) {
   if (forbidden.some(x => name.toLowerCase().includes(x))) throw new Error(`Refusing to package secret file: ${name}`);
 }
 
-// System-bar stability is unrelated to PDF rendering, but must remain unchanged.
 const mainJavaRoot = join(app, 'src', 'main', 'java');
 function findMainActivity(dir){
   if(!existsSync(dir)) return null;
