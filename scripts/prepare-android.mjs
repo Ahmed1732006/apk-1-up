@@ -456,7 +456,7 @@ if(mainActivity){
         ivSystemBars();
     }
 
-    @Override protected void onResume() {
+    @Override public void onResume() {
         super.onResume();
         ivSystemBars();
     }`);
