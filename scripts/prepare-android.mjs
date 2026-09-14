@@ -21,36 +21,32 @@ if (existsSync(gradle)) {
   text = text.replace(/applicationId\s+['"][^'"]+['"]/g, `applicationId 'com.inthevoid.platform'`);
   text = text.replace(/compileSdkVersion\s+[^\n]+/g, 'compileSdkVersion 36');
   text = text.replace(/minSdkVersion\s+[^\n]+/g, 'minSdkVersion 28');
+
   if (!text.includes('androidx.pdf:pdf-viewer-fragment:1.0.0-beta01')) {
     const deps = text.indexOf('dependencies {');
-    if (deps >= 0) text = text.slice(0, deps) + 'dependencies {\n    implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' + text.slice(deps + 'dependencies {'.length);
-    else throw new Error('Android dependencies block not found.');
+    if (deps < 0) throw new Error('Android dependencies block not found.');
+    text = text.slice(0, deps) + 'dependencies {\n    implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' + text.slice(deps + 'dependencies {'.length);
   }
+
+  // Configure release signing without rebuilding/replacing the generated
+  // buildTypes block. The previous string-splice approach could leave an
+  // extra closing brace in Gradle and caused the release build to fail before
+  // Java compilation.
   if (!text.includes('inTheVoidRelease')) {
-    const androidBlock = text.indexOf('android {');
-    if (androidBlock >= 0) {
-      text = text.slice(0, androidBlock) + `android {
-    signingConfigs {
-        inTheVoidRelease {
-            def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")
-            storeFile file(keystorePath ?: "in_the_void_release.jks")
-            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""
-            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "in-the-void-release"
-            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""
-        }
-    }
-` + text.slice(androidBlock + 'android {'.length);
-      const buildTypesAt = text.indexOf('buildTypes {');
-      if (buildTypesAt >= 0) {
-        const releaseAt = text.indexOf('release {', buildTypesAt);
-        if (releaseAt >= 0) {
-          text = text.slice(0, releaseAt) + 'release {\n            signingConfig signingConfigs.inTheVoidRelease\n        ' + text.slice(releaseAt + 'release {'.length);
-        } else {
-          text = text.slice(0, buildTypesAt) + 'buildTypes {\n        release { signingConfig signingConfigs.inTheVoidRelease }' + text.slice(buildTypesAt + 'buildTypes {'.length);
-        }
-      }
-    }
+    const androidOpen = text.indexOf('android {');
+    if (androidOpen < 0) throw new Error('Android block not found.');
+    const signingBlock = `android {\n    signingConfigs {\n        inTheVoidRelease {\n            def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")\n            storeFile file(keystorePath ?: "in_the_void_release.jks")\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""\n            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "in-the-void-release"\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""\n        }\n    }\n`;
+    text = text.slice(0, androidOpen) + signingBlock + text.slice(androidOpen + 'android {'.length);
   }
+
+  if (!text.includes('signingConfig signingConfigs.inTheVoidRelease')) {
+    const buildTypesOpen = text.indexOf('buildTypes {');
+    if (buildTypesOpen < 0) throw new Error('Android buildTypes block not found.');
+    const releaseOpen = text.indexOf('release {', buildTypesOpen);
+    if (releaseOpen < 0) throw new Error('Android release buildType block not found.');
+    text = text.slice(0, releaseOpen) + 'release {\n            signingConfig signingConfigs.inTheVoidRelease\n        ' + text.slice(releaseOpen + 'release {'.length);
+  }
+
   writeFileSync(gradle, text);
 }
 
