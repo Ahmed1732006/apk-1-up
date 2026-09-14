@@ -1,0 +1,14 @@
+node_modules/
+www/
+android/.gradle/
+android/build/
+android/app/build/
+android/app/google-services.json
+*.jks
+service-account*.json
+firebase-adminsdk*.json
+*-firebase-adminsdk-*.json
+.env
+.env.*
+
+*.keystore
