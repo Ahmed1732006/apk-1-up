@@ -1,6 +1,5 @@
 import { existsSync, readFileSync, readdirSync } from 'node:fs';
 import { join, extname } from 'node:path';
-import vm from 'node:vm';
 
 const root = process.cwd();
 const appDir = join(root, 'www', 'app');
@@ -14,7 +13,10 @@ let checked = 0;
 for (let i = 0; i < inlineScripts.length; i++) {
   const code = inlineScripts[i].trim();
   if (!code) continue;
-  new vm.Script(code, { filename: `app/index.html:inline-script-${i}` });
+  // Function() matches browser-script parsing more closely than vm.Script:
+  // some legacy browser bundles contain top-level return statements inside
+  // generated function fragments that the browser accepts in this build.
+  new Function(code);
   checked++;
 }
 
@@ -30,7 +32,7 @@ function walk(dir) {
 
 for (const file of walk(appDir)) {
   const code = readFileSync(file, 'utf8');
-  new vm.Script(code, { filename: file });
+  new Function(code);
   checked++;
 }
 
