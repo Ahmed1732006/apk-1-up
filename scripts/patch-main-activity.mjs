@@ -24,7 +24,7 @@ if (file.endsWith('.kt')) {
   const bars = `    private fun ivSystemBars() {
         val w = window
         w.statusBarColor = android.graphics.Color.rgb(3, 10, 20)
-        w.navigationBarColor = android.graphics.Color.rgb(255, 248, 252)
+        w.navigationBarColor = android.graphics.Color.WHITE
         if (android.os.Build.VERSION.SDK_INT >= 26) w.decorView.systemUiVisibility = android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
         if (android.os.Build.VERSION.SDK_INT >= 29) w.isNavigationBarContrastEnforced = false
     }\n`;
@@ -40,6 +40,11 @@ ${pluginLine}
     override fun onResume() {
         super.onResume()
         ivSystemBars()
+    }
+
+    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) ivSystemBars()
     }
 
 ${bars}}
@@ -66,6 +71,15 @@ ${pluginLine}
     }
 ` + text.slice(i);
     }
+    if (!text.includes('override fun onWindowFocusChanged(hasFocus: Boolean)')) {
+      const i = text.lastIndexOf('}');
+      if (i < 0) throw new Error('Cannot append Kotlin focus callback.');
+      text = text.slice(0, i) + `    override fun onWindowFocusChanged(hasFocus: Boolean) {
+        super.onWindowFocusChanged(hasFocus)
+        if (hasFocus) ivSystemBars()
+    }
+` + text.slice(i);
+    }
   }
 } else {
   if (!text.includes('import android.os.Bundle;')) {
@@ -77,7 +91,7 @@ ${pluginLine}
     const bars = `\n    private void ivSystemBars() {
         android.view.Window w = getWindow();
         w.setStatusBarColor(android.graphics.Color.rgb(3,10,20));
-        w.setNavigationBarColor(android.graphics.Color.rgb(255,248,252));
+        w.setNavigationBarColor(android.graphics.Color.WHITE);
         if (android.os.Build.VERSION.SDK_INT >= 26) w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
         if (android.os.Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);
     }\n`;
@@ -95,6 +109,15 @@ ${pluginLine}
     text = text.slice(0, i) + `    @Override public void onResume() {
         super.onResume();
         ivSystemBars();
+    }
+` + text.slice(i);
+  }
+  if (!text.includes('public void onWindowFocusChanged(boolean hasFocus)')) {
+    const i = text.lastIndexOf('}');
+    if (i < 0) throw new Error('Cannot append Java focus callback.');
+    text = text.slice(0, i) + `    @Override public void onWindowFocusChanged(boolean hasFocus) {
+        super.onWindowFocusChanged(hasFocus);
+        if (hasFocus) ivSystemBars();
     }
 ` + text.slice(i);
   }
