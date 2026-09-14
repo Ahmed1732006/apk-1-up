@@ -11,6 +11,13 @@ const newCacheBoot = `const cached=ivReadAppCache(session.user.id);\n           
 if (html.includes(oldCacheBoot)) html = html.replace(oldCacheBoot, newCacheBoot);
 else if (!html.includes(newCacheBoot)) throw new Error('Expected boot cache block not found.');
 
+// If the live Supabase refresh fails, use the cached data as a fallback.
+// This keeps startup online-first without throwing away the app's offline safety net.
+const oldCoreFallback = 'if(coreFailed && restored) ivRestoreAppCache(state.user.id);';
+const newCoreFallback = 'if(coreFailed && cached) ivRestoreAppCache(state.user.id);';
+if (html.includes(oldCoreFallback)) html = html.replace(oldCoreFallback, newCoreFallback);
+else if (!html.includes(newCoreFallback)) throw new Error('Expected live-refresh fallback block not found.');
+
 const marker = '<script id="iv-native-pdf-runtime">';
 if (!html.includes(marker)) {
   const script = `${marker}
