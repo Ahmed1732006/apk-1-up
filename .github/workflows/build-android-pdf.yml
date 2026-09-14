@@ -105,7 +105,7 @@ jobs:
           require 'registerPlugin' "$MAIN_JAVA" 'native plugin registration call'
           require 'PdfViewer.openUrl' "$HTML" 'canonical web-to-native PDF call'
           require 'fileName: (m.file_path ?' "$HTML" 'real storage filename retained for PDF routing'
-          require 'errorView.setText("تعذر عرض ملف PDF\\n\\n" + message' "$PDF_JAVA" 'Java escaped PDF error text'
+          require 'errorView.setText("تعذر عرض ملف PDF\n\n" + message' "$PDF_JAVA" 'Java escaped PDF error text'
 
           if grep -Fq 'iv-native-pdf-runtime' "$HTML"; then
             echo 'FAIL: legacy web PDF runtime marker still exists'
