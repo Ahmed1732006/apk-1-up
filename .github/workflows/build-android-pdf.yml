@@ -59,7 +59,7 @@ jobs:
           echo '--- Active PDF routing in generated web bundle ---'
           grep -nE 'downloadMaterial|PdfViewer\.openUrl|fileName: \(m\.file_path|iv-native-pdf-runtime' "$HTML" | head -80 || true
           echo '--- Active native plugin markers ---'
-          grep -nE 'openUrl\(PluginCall|downloadAndValidatePdf|%PDF-|PdfRenderer|NotPdfException' "$PLUGIN_JAVA" | head -80 || true
+          grep -nE 'openUrl\(PluginCall|downloadAndValidatePdf|headerChecked|PdfRenderer|NotPdfException' "$PLUGIN_JAVA" | head -80 || true
           echo '--- Active native viewer markers ---'
           grep -nE 'PdfDocumentView|ScaleGestureDetector|scrollY|requestPage|evictFarPages|goToPage|onFling' "$PDF_JAVA" | head -100 || true
 
@@ -75,7 +75,7 @@ jobs:
 
           require 'public void openUrl(PluginCall call)' "$PLUGIN_JAVA" 'native URL bridge'
           require 'downloadAndValidatePdf' "$PLUGIN_JAVA" 'full PDF download/validation'
-          require '%PDF-' "$PLUGIN_JAVA" 'PDF magic-byte validation'
+          require 'headerChecked' "$PLUGIN_JAVA" 'PDF header validation'
           require 'new PdfRenderer(fd)' "$PLUGIN_JAVA" 'document validation with PdfRenderer'
           require 'private class PdfDocumentView extends View' "$PDF_JAVA" 'single continuous viewer'
           require 'ScaleGestureDetector' "$PDF_JAVA" 'pinch zoom'
