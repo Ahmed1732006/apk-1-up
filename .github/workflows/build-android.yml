@@ -54,8 +54,11 @@ jobs:
       - name: Apply vertical PDF viewer
         run: node scripts/patch-pdf-viewer.mjs
 
+      - name: Patch Capacitor MainActivity (Java/Kotlin)
+        run: node scripts/patch-main-activity.mjs
+
       - name: Validate Android patch script syntax
-        run: node --check scripts/prepare-android.mjs && node --check scripts/patch-pdf-viewer.mjs
+        run: node --check scripts/prepare-android.mjs && node --check scripts/patch-pdf-viewer.mjs && node --check scripts/patch-main-activity.mjs
 
       - name: Preflight generated Android sources
         shell: bash
@@ -63,15 +66,18 @@ jobs:
           set -euo pipefail
           PDF_JAVA="android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity.java"
           MAIN_JAVA="android/app/src/main/java/com/inthevoid/platform/MainActivity.java"
+          MAIN_KT="android/app/src/main/java/com/inthevoid/platform/MainActivity.kt"
           MANIFEST="android/app/src/main/AndroidManifest.xml"
           test -s "$PDF_JAVA"
-          test -s "$MAIN_JAVA"
           test -s "$MANIFEST"
+
+          if [ -s "$MAIN_KT" ]; then MAIN_FILE="$MAIN_KT"; else MAIN_FILE="$MAIN_JAVA"; fi
+          test -s "$MAIN_FILE"
 
           echo "--- Generated PDF viewer markers ---"
           grep -nE 'Pdf(Page|Document)View|onFling|goToPage|scrollY|ScaleGestureDetector' "$PDF_JAVA" || true
           echo "--- Generated MainActivity markers ---"
-          grep -nE 'registerPlugin|onResume' "$MAIN_JAVA" || true
+          grep -nE 'registerPlugin|onResume|PdfViewerPlugin' "$MAIN_FILE" || true
 
           check_grep() {
             local pattern="$1" file="$2" label="$3"
@@ -90,9 +96,10 @@ jobs:
           check_grep 'scrollY' "$PDF_JAVA" 'vertical document scrolling'
           check_grep 'ScaleGestureDetector' "$PDF_JAVA" 'pinch zoom'
           check_grep 'FileProvider' "$MANIFEST" 'FileProvider bridge'
-          check_grep 'registerPlugin(PdfViewerPlugin.class)' "$MAIN_JAVA" 'native PDF plugin registration'
+          check_grep 'registerPlugin' "$MAIN_FILE" 'native PDF plugin registration'
+          check_grep 'PdfViewerPlugin' "$MAIN_FILE" 'native PDF plugin reference'
 
-          if grep -Eq 'void onResume\(\)' "$MAIN_JAVA"; then
+          if grep -Eq 'void onResume\(\)|fun onResume\(' "$MAIN_FILE"; then
             echo "PASS: MainActivity onResume"
           else
             echo "FAIL: MainActivity onResume"
