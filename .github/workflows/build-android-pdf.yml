@@ -28,9 +28,9 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          RUN_VERSION_CODE=$((GITHUB_RUN_NUMBER + 30))
+          RUN_VERSION_CODE=$((GITHUB_RUN_NUMBER + 40))
           echo "ANDROID_VERSION_CODE=$RUN_VERSION_CODE" >> "$GITHUB_ENV"
-          echo "ANDROID_VERSION_NAME=1.2.3" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.3.0" >> "$GITHUB_ENV"
       - name: Apply Android project fixes
         run: node scripts/prepare-android.mjs
       - name: Apply canonical PDF architecture
@@ -51,17 +51,21 @@ jobs:
           PLUGIN_JAVA="android/app/src/main/java/com/inthevoid/platform/PdfViewerPlugin.java"
           MAIN_JAVA="android/app/src/main/java/com/inthevoid/platform/MainActivity.java"
           HTML="www/app/index.html"
+          GRADLE="android/app/build.gradle"
+          MANIFEST="android/app/src/main/AndroidManifest.xml"
           test -s "$PDF_JAVA"
           test -s "$PLUGIN_JAVA"
           test -s "$MAIN_JAVA"
           test -s "$HTML"
+          test -s "$GRADLE"
+          test -s "$MANIFEST"
 
           echo '--- Active PDF routing in generated web bundle ---'
           grep -nE 'downloadMaterial|PdfViewer\.openUrl|fileName: \(m\.file_path|iv-native-pdf-runtime' "$HTML" | head -80 || true
-          echo '--- Active native plugin markers ---'
-          grep -nE 'openUrl\(PluginCall|downloadAndValidatePdf|headerChecked|PdfRenderer|NotPdfException' "$PLUGIN_JAVA" | head -80 || true
-          echo '--- Active native viewer markers ---'
-          grep -nE 'PdfDocumentView|ScaleGestureDetector|scrollY|requestPage|evictFarPages|goToPage|onFling' "$PDF_JAVA" | head -100 || true
+          echo '--- Active native PDF bridge markers ---'
+          grep -nE 'openUrl\(PluginCall|downloadAndValidatePdf|containsPdfHeader|containsPdfEof|NotPdfException' "$PLUGIN_JAVA" | head -80 || true
+          echo '--- Active AndroidX PDF viewer markers ---'
+          grep -nE 'PdfViewerFragment|PdfView|setPagesPerRow|setVerticalPageSpacing|setMaxZoom|onLoadDocumentSuccess|onLoadDocumentError' "$PDF_JAVA" | head -100 || true
 
           require() {
             local pattern="$1" file="$2" label="$3"
@@ -73,26 +77,41 @@ jobs:
             fi
           }
 
+          require 'implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' "$GRADLE" 'official AndroidX PDF viewer dependency'
+          require 'minSdkVersion 28' "$GRADLE" 'AndroidX PDF minimum SDK'
           require 'public void openUrl(PluginCall call)' "$PLUGIN_JAVA" 'native URL bridge'
-          require 'downloadAndValidatePdf' "$PLUGIN_JAVA" 'full PDF download/validation'
-          require 'headerChecked' "$PLUGIN_JAVA" 'PDF header validation'
-          require 'new PdfRenderer(fd)' "$PLUGIN_JAVA" 'document validation with PdfRenderer'
-          require 'private class PdfDocumentView extends View' "$PDF_JAVA" 'single continuous viewer'
-          require 'ScaleGestureDetector' "$PDF_JAVA" 'pinch zoom'
-          require 'scrollY' "$PDF_JAVA" 'vertical document scrolling'
-          require 'requestDisallowInterceptTouchEvent(true)' "$PDF_JAVA" 'gesture interception lock'
-          require 'evictFarPages' "$PDF_JAVA" 'page cache eviction'
+          require 'downloadAndValidatePdf' "$PLUGIN_JAVA" 'complete PDF download pipeline'
+          require 'containsPdfHeader' "$PLUGIN_JAVA" 'PDF signature validation'
+          require 'containsPdfEof' "$PLUGIN_JAVA" 'PDF EOF validation'
+          require 'private static class NotPdfException' "$PLUGIN_JAVA" 'non-PDF rejection'
+          require 'extends AppCompatActivity' "$PDF_JAVA" 'dedicated PDF activity'
+          require 'PdfViewerFragment' "$PDF_JAVA" 'official PDF fragment'
+          require 'setPagesPerRow(1)' "$PDF_JAVA" 'one page per row'
+          require 'setVerticalAlignment(PdfView.VERTICAL_ALIGNMENT_TOP)' "$PDF_JAVA" 'top-aligned vertical document'
+          require 'setVerticalPageSpacing' "$PDF_JAVA" 'vertical page spacing'
+          require 'setMaxZoom(5f)' "$PDF_JAVA" 'PDF zoom limit'
+          require 'onLoadDocumentSuccess' "$PDF_JAVA" 'successful document callback'
+          require 'onLoadDocumentError' "$PDF_JAVA" 'real PDF error callback'
+          require 'setToolboxVisible(false)' "$PDF_JAVA" 'viewer-only toolbar surface'
           require 'PdfViewerPlugin' "$MAIN_JAVA" 'plugin registration'
           require 'registerPlugin' "$MAIN_JAVA" 'native plugin registration call'
           require 'PdfViewer.openUrl' "$HTML" 'canonical web-to-native PDF call'
-          require 'fileName: (m.file_path ?' "$HTML" 'real storage filename retained for routing'
+          require 'fileName: (m.file_path ?' "$HTML" 'real storage filename retained for PDF routing'
 
           if grep -Fq 'iv-native-pdf-runtime' "$HTML"; then
             echo 'FAIL: legacy web PDF runtime marker still exists'
             exit 1
           fi
-          if grep -Fq 'private class PdfPageView extends View' "$PDF_JAVA"; then
-            echo 'FAIL: legacy single-page viewer still exists'
+          if grep -Fq 'android.graphics.pdf.PdfRenderer' "$PLUGIN_JAVA"; then
+            echo 'FAIL: legacy PdfRenderer plugin still exists'
+            exit 1
+          fi
+          if grep -Fq 'android.graphics.pdf.PdfRenderer' "$PDF_JAVA"; then
+            echo 'FAIL: legacy custom PdfRenderer viewer still exists'
+            exit 1
+          fi
+          if grep -Fq 'private class PdfPageView' "$PDF_JAVA"; then
+            echo 'FAIL: legacy single-page custom viewer still exists'
             exit 1
           fi
           if grep -Fq 'goToPage(' "$PDF_JAVA"; then
@@ -103,7 +122,7 @@ jobs:
             echo 'FAIL: legacy horizontal fling navigation still exists'
             exit 1
           fi
-          echo 'PASS: no legacy PDF viewer path in generated Android/web bundle.'
+          echo 'PASS: one canonical Android PDF viewer path; no legacy custom renderer.'
       - name: Sync Capacitor
         run: npx cap sync android
       - name: Setup Java
@@ -157,7 +176,7 @@ jobs:
           PACKAGE_LINE="$(printf '%s\n' "$BADGING" | grep '^package:' | head -1)"
           case "$PACKAGE_LINE" in *"name='com.inthevoid.platform'"*) : ;; *) exit 1 ;; esac
           case "$PACKAGE_LINE" in *"versionCode='$ANDROID_VERSION_CODE'"*) : ;; *) exit 1 ;; esac
-          case "$PACKAGE_LINE" in *"versionName='1.2.3'"*) : ;; *) exit 1 ;; esac
+          case "$PACKAGE_LINE" in *"versionName='1.3.0'"*) : ;; *) exit 1 ;; esac
           SIGNATURE_INFO="$("$APKSIGNER" verify --print-certs "$APK" 2>&1)"
           ACTUAL_SHA256="$(printf '%s\n' "$SIGNATURE_INFO" | grep -Eio '([0-9a-f]{2}:){31}[0-9a-f]{2}' | head -1 | tr -d ':' | tr '[:upper:]' '[:lower:]' || true)"
           if ! printf '%s' "$ACTUAL_SHA256" | grep -Eq '^[0-9a-f]{64}$'; then
@@ -168,7 +187,7 @@ jobs:
       - name: Upload APK
         uses: actions/upload-artifact@v4
         with:
-          name: IN_THE_VOID-APK-Canonical-PDF
+          name: IN_THE_VOID-APK-Canonical-PDF-v4
           path: android/app/build/outputs/apk/release/app-release.apk
           if-no-files-found: error
       - name: Remove temporary signing keystore
