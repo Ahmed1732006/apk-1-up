@@ -28,23 +28,11 @@ if (existsSync(gradle)) {
     text = text.slice(0, deps) + 'dependencies {\n    implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' + text.slice(deps + 'dependencies {'.length);
   }
 
-  // Configure release signing without rebuilding/replacing the generated
-  // buildTypes block. The previous string-splice approach could leave an
-  // extra closing brace in Gradle and caused the release build to fail before
-  // Java compilation.
+  // Keep signing in a separate android configuration block. This lets Gradle
+  // merge it with Capacitor's generated buildTypes instead of performing
+  // fragile brace-sensitive string surgery inside that generated block.
   if (!text.includes('inTheVoidRelease')) {
-    const androidOpen = text.indexOf('android {');
-    if (androidOpen < 0) throw new Error('Android block not found.');
-    const signingBlock = `android {\n    signingConfigs {\n        inTheVoidRelease {\n            def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")\n            storeFile file(keystorePath ?: "in_the_void_release.jks")\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""\n            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "in-the-void-release"\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""\n        }\n    }\n`;
-    text = text.slice(0, androidOpen) + signingBlock + text.slice(androidOpen + 'android {'.length);
-  }
-
-  if (!text.includes('signingConfig signingConfigs.inTheVoidRelease')) {
-    const buildTypesOpen = text.indexOf('buildTypes {');
-    if (buildTypesOpen < 0) throw new Error('Android buildTypes block not found.');
-    const releaseOpen = text.indexOf('release {', buildTypesOpen);
-    if (releaseOpen < 0) throw new Error('Android release buildType block not found.');
-    text = text.slice(0, releaseOpen) + 'release {\n            signingConfig signingConfigs.inTheVoidRelease\n        ' + text.slice(releaseOpen + 'release {'.length);
+    text += `\n\n// IN THE VOID release signing configuration\nandroid {\n    signingConfigs {\n        inTheVoidRelease {\n            def keystorePath = System.getenv("ANDROID_KEYSTORE_PATH")\n            storeFile file(keystorePath ?: "in_the_void_release.jks")\n            storePassword System.getenv("ANDROID_KEYSTORE_PASSWORD") ?: ""\n            keyAlias System.getenv("ANDROID_KEY_ALIAS") ?: "in-the-void-release"\n            keyPassword System.getenv("ANDROID_KEY_PASSWORD") ?: ""\n        }\n    }\n    buildTypes {\n        release {\n            signingConfig signingConfigs.inTheVoidRelease\n        }\n    }\n}\n`;
   }
 
   writeFileSync(gradle, text);
