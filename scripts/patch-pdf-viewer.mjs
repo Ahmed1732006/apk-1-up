@@ -6,7 +6,7 @@ let s=readFileSync(p,'utf8');
 s=s.replace(/import android\.view\.ViewConfiguration;\n/,'');
 s=s.replace(/private PdfPageView pageView;/,'private PdfDocumentView pageView;');
 s=s.replace(/pageView = new PdfPageView\(\);/,'pageView = new PdfDocumentView();');
-s=s.replace(/\s*pageView\.setPageChangedListener\(p => \{ currentPage = p; updateLabel\(\); \}\);\s*/,'\n            ');
+s=s.replace(/\s*pageView\.setPageChangedListener\(p -> \{ currentPage = p; updateLabel\(\); \}\);\s*/,'\n            ');
 s=s.replace(/pageView\.loadPage\(\);/,'pageView.loadDocument();');
 const start=s.indexOf('    private class PdfPageView extends View {');
 if(start<0) throw new Error('PdfPageView not found');
