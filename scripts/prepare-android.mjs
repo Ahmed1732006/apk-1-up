@@ -14,25 +14,11 @@ if (existsSync(gs)) copyFileSync(gs, join(app, 'google-services.json'));
 const versionCode = Number(process.env.ANDROID_VERSION_CODE || 7);
 const versionName = process.env.ANDROID_VERSION_NAME || '1.2.1';
 const gradle = join(app, 'build.gradle');
-if (existsSync(gradle)) {
-  let text = readFileSync(gradle, 'utf8');
-  text = text.replace(/versionCode\s+\d+/g, `versionCode ${versionCode}`);
-  text = text.replace(/versionName\s+['"][^'"]+['"]/g, `versionName '${versionName}'`);
-  text = text.replace(/applicationId\s+['"][^'"]+['"]/g, `applicationId 'com.inthevoid.platform'`);
-  text = text.replace(/compileSdkVersion\s+[^\n]+/g, 'compileSdkVersion 36');
-  text = text.replace(/minSdkVersion\s+[^\n]+/g, 'minSdkVersion 28');
 
-  if (!text.includes('androidx.pdf:pdf-viewer-fragment:1.0.0-beta01')) {
-    const deps = text.indexOf('dependencies {');
-    if (deps < 0) throw new Error('Android dependencies block not found.');
-    text = text.slice(0, deps) + 'dependencies {\n    implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"' + text.slice(deps + 'dependencies {'.length);
-  }
-
-  // Signing is intentionally handled after assembleRelease by the CI workflow
-  // with Android's official zipalign/apksigner tools. Do not splice signing
-  // blocks into Capacitor's generated build.gradle here.
-  writeFileSync(gradle, text);
-}
+// Generate one complete, balanced Gradle file instead of performing regex
+// edits inside nested Groovy closures.
+const gradleText = `apply plugin: 'com.android.application'\n\nandroid {\n    namespace = "com.inthevoid.platform"\n    compileSdk = 36\n\n    defaultConfig {\n        applicationId "com.inthevoid.platform"\n        minSdkVersion 28\n        targetSdkVersion 36\n        versionCode ${versionCode}\n        versionName "${versionName}"\n        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"\n\n        aaptOptions {\n            ignoreAssetsPattern = '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'\n        }\n    }\n\n    buildTypes {\n        release {\n            minifyEnabled false\n            proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'\n        }\n    }\n}\n\nrepositories {\n    flatDir {\n        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'\n    }\n}\n\ndependencies {\n    implementation fileTree(include: ['*.jar'], dir: 'libs')\n    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"\n    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"\n    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"\n    implementation project(':capacitor-android')\n    implementation project(':capacitor-cordova-android-plugins')\n    implementation "androidx.pdf:pdf-viewer-fragment:1.0.0-beta01"\n    testImplementation "junit:junit:$junitVersion"\n    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"\n    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"\n}\n\napply from: 'capacitor.build.gradle'\n\ntry {\n    def servicesJSON = file('google-services.json')\n    if (servicesJSON.text) {\n        apply plugin: 'com.google.gms.google-services'\n    }\n} catch(Exception e) {\n    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")\n}\n`;
+writeFileSync(gradle, gradleText);
 
 const iconSource = join(root, 'resources', 'icon.png');
 if (existsSync(iconSource)) {
@@ -65,14 +51,7 @@ const mainActivity=findMainActivity(mainJavaRoot);
 if(mainActivity){
   let t=readFileSync(mainActivity,'utf8');
   if(t.includes('public class MainActivity extends BridgeActivity') && !t.includes('ivSystemBars')){
-    t=t.replace('public class MainActivity extends BridgeActivity {',`public class MainActivity extends BridgeActivity {
-    private void ivSystemBars() {
-        android.view.Window w = getWindow();
-        w.setStatusBarColor(android.graphics.Color.rgb(3,10,20));
-        w.setNavigationBarColor(android.graphics.Color.rgb(255,248,252));
-        if (android.os.Build.VERSION.SDK_INT >= 26) w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
-        if (android.os.Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);
-    }`);
+    t=t.replace('public class MainActivity extends BridgeActivity {',`public class MainActivity extends BridgeActivity {\n    private void ivSystemBars() {\n        android.view.Window w = getWindow();\n        w.setStatusBarColor(android.graphics.Color.rgb(3,10,20));\n        w.setNavigationBarColor(android.graphics.Color.rgb(255,248,252));\n        if (android.os.Build.VERSION.SDK_INT >= 26) w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);\n        if (android.os.Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);\n    }`);
   }
   writeFileSync(mainActivity,t);
 }
