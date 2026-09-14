@@ -35,6 +35,8 @@ jobs:
         run: node scripts/prepare-android.mjs
       - name: Apply canonical PDF architecture
         run: node scripts/patch-pdf-canonical.mjs
+      - name: Fix generated PDF Java string escapes
+        run: node scripts/fix-pdf-java-escapes.mjs
       - name: Patch Capacitor MainActivity system bars and plugin registration
         run: node scripts/patch-main-activity.mjs
       - name: Validate patch scripts
@@ -42,6 +44,7 @@ jobs:
           set -euo pipefail
           node --check scripts/prepare-android.mjs
           node --check scripts/patch-pdf-canonical.mjs
+          node --check scripts/fix-pdf-java-escapes.mjs
           node --check scripts/patch-main-activity.mjs
       - name: Preflight canonical PDF path
         shell: bash
@@ -102,6 +105,7 @@ jobs:
           require 'registerPlugin' "$MAIN_JAVA" 'native plugin registration call'
           require 'PdfViewer.openUrl' "$HTML" 'canonical web-to-native PDF call'
           require 'fileName: (m.file_path ?' "$HTML" 'real storage filename retained for PDF routing'
+          require 'errorView.setText("تعذر عرض ملف PDF\\n\\n" + message' "$PDF_JAVA" 'Java escaped PDF error text'
 
           if grep -Fq 'iv-native-pdf-runtime' "$HTML"; then
             echo 'FAIL: legacy web PDF runtime marker still exists'
@@ -134,6 +138,7 @@ jobs:
           npx cap sync android
           node scripts/prepare-android.mjs
           node scripts/patch-pdf-canonical.mjs
+          node scripts/fix-pdf-java-escapes.mjs
           node scripts/patch-main-activity.mjs
       - name: Setup Java
         uses: actions/setup-java@v4
