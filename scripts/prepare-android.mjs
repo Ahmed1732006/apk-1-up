@@ -8,12 +8,9 @@ const res = join(app, 'src', 'main', 'res');
 
 if (!existsSync(app)) throw new Error('Android project was not generated. Run npx cap add android first.');
 
-// Firebase Android config belongs in android/app, never inside the web bundle.
 const gs = join(root, 'google-services.json');
 if (existsSync(gs)) copyFileSync(gs, join(app, 'google-services.json'));
 
-// Keep the current app identity and bump the release metadata. The current release APK is
-// versionCode 2 / versionName 1.1.0; the next release uses a higher versionCode and 1.2.0.
 const versionCode = Number(process.env.ANDROID_VERSION_CODE || 6);
 const versionName = process.env.ANDROID_VERSION_NAME || '1.2.0';
 const gradle = join(app, 'build.gradle');
@@ -50,8 +47,8 @@ if (existsSync(gradle)) {
   writeFileSync(gradle, text);
 }
 
-// Keep the existing application icon unchanged. Capacitor Assets is invoked by CI
-// for launcher/adaptive variants from the existing resources/icon.png.
+// Preserve the existing launcher icon. CI may generate density/adaptive resources,
+// but this script never replaces the source icon with the splash GIF.
 const iconSource = join(root, 'resources', 'icon.png');
 if (existsSync(iconSource)) {
   for (const dir of ['mipmap-mdpi','mipmap-hdpi','mipmap-xhdpi','mipmap-xxhdpi','mipmap-xxxhdpi']) {
@@ -61,16 +58,16 @@ if (existsSync(iconSource)) {
   }
 }
 
-// Keep the generated project from accidentally bundling any service-account JSON.
+// Refuse obvious server-side credential files from being packaged.
 const forbidden = ['firebase-adminsdk', 'service-account', 'private-key'];
-const rootFiles = [];
-for (const name of rootFiles) {
-  if (forbidden.some(x => name.toLowerCase().includes(x))) throw new Error(`Refusing to package secret file: ${name}`);
+for (const name of readdirSync(root)) {
+  if (['node_modules','.git','.github','android','www'].includes(name)) continue;
+  if (forbidden.some(x => name.toLowerCase().includes(x))) {
+    throw new Error(`Refusing to package secret file: ${name}`);
+  }
 }
 
-
 // Native PDF viewer + safe "open with another app" bridge.
-// This is injected only into the generated Android project; the web build remains unchanged.
 const javaBase = join(app, 'src', 'main', 'java', 'com', 'inthevoid', 'platform');
 mkdirSync(javaBase, { recursive: true });
 writeFileSync(join(javaBase, 'PdfViewerPlugin.java'), `package com.inthevoid.platform;
@@ -123,6 +120,7 @@ public class PdfViewerPlugin extends Plugin {
     }
 }
 `);
+
 writeFileSync(join(javaBase, 'PdfViewerActivity.java'), `package com.inthevoid.platform;
 
 import android.app.Activity;
@@ -130,26 +128,27 @@ import android.graphics.Bitmap;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.Paint;
+import android.graphics.RectF;
 import android.graphics.drawable.GradientDrawable;
 import android.graphics.pdf.PdfRenderer;
 import android.os.Bundle;
 import android.os.ParcelFileDescriptor;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.MotionEvent;
 import android.view.ScaleGestureDetector;
 import android.view.View;
+import android.view.ViewConfiguration;
 import android.widget.Button;
 import android.widget.LinearLayout;
-import android.widget.ScrollView;
 import android.widget.TextView;
 import android.widget.Toast;
 import java.io.File;
-import java.util.ArrayList;
 
 public class PdfViewerActivity extends Activity {
     private PdfRenderer renderer;
     private ParcelFileDescriptor descriptor;
-    private PdfPagesView pages;
+    private PdfPageView pageView;
     private TextView pageLabel;
     private int pageCount;
     private int currentPage = 0;
@@ -157,10 +156,7 @@ public class PdfViewerActivity extends Activity {
 
     @Override public void onCreate(Bundle state) {
         super.onCreate(state);
-        getWindow().setStatusBarColor(Color.rgb(3,10,20));
-        getWindow().setNavigationBarColor(Color.rgb(3,10,20));
-        if (android.os.Build.VERSION.SDK_INT >= 29) getWindow().setNavigationBarContrastEnforced(false);
-
+        applySystemBars();
         try {
             String path = getIntent().getStringExtra("pdf_path");
             if (path == null || path.isEmpty()) throw new Exception("PDF path is empty");
@@ -168,21 +164,19 @@ public class PdfViewerActivity extends Activity {
             descriptor = ParcelFileDescriptor.open(pdfFile, ParcelFileDescriptor.MODE_READ_ONLY);
             renderer = new PdfRenderer(descriptor);
             pageCount = renderer.getPageCount();
+            if (pageCount < 1) throw new Exception("PDF has no pages");
 
             LinearLayout root = new LinearLayout(this);
             root.setOrientation(LinearLayout.VERTICAL);
             root.setBackgroundColor(Color.rgb(3,10,20));
 
-            LinearLayout bar = new LinearLayout(this);
-            bar.setGravity(Gravity.CENTER_VERTICAL);
-            bar.setPadding(dp(8),dp(6),dp(8),dp(6));
-            bar.setBackgroundColor(Color.rgb(10,22,38));
+            LinearLayout top = new LinearLayout(this);
+            top.setGravity(Gravity.CENTER_VERTICAL);
+            top.setPadding(dp(8), dp(6), dp(8), dp(6));
+            top.setBackgroundColor(Color.rgb(10,22,38));
 
-            Button close = button("×", false);
-            Button prev = button("‹", false);
-            Button next = button("›", false);
-            Button external = button("فتح باستخدام تطبيق آخر", true);
-
+            Button close = button("×", false, Color.rgb(220,38,38));
+            Button external = button("فتح باستخدام تطبيق آخر", true, Color.rgb(37,99,235));
             TextView title = new TextView(this);
             title.setText(getIntent().getStringExtra("pdf_name"));
             title.setTextColor(Color.WHITE);
@@ -197,245 +191,271 @@ public class PdfViewerActivity extends Activity {
             pageLabel.setGravity(Gravity.CENTER);
             updateLabel();
 
-            bar.addView(close, weight(0.62f));
-            bar.addView(prev, weight(0.62f));
-            bar.addView(pageLabel, weight(1.05f));
-            bar.addView(next, weight(0.62f));
-            bar.addView(title, weight(2.0f));
-            bar.addView(external, weight(2.35f));
+            top.addView(close, weight(0.7f));
+            top.addView(pageLabel, weight(1.0f));
+            top.addView(title, weight(2.5f));
+            top.addView(external, weight(2.2f));
+            root.addView(top, new LinearLayout.LayoutParams(-1, dp(62)));
 
-            root.addView(bar, new LinearLayout.LayoutParams(-1, dp(64)));
-
-            ScrollView scroll = new ScrollView(this);
-            scroll.setFillViewport(true);
-            scroll.setClipToPadding(false);
-            pages = new PdfPagesView(scroll);
-            scroll.addView(pages, new ScrollView.LayoutParams(-1,-2));
-            root.addView(scroll, new LinearLayout.LayoutParams(-1,0,1));
-
+            pageView = new PdfPageView();
+            root.addView(pageView, new LinearLayout.LayoutParams(-1, 0, 1));
             setContentView(root);
 
             close.setOnClickListener(v -> finish());
-            prev.setOnClickListener(v -> goToPage(currentPage - 1, scroll));
-            next.setOnClickListener(v -> goToPage(currentPage + 1, scroll));
             external.setOnClickListener(v -> PdfViewerPlugin.openExternal(this, pdfFile));
-
-            scroll.getViewTreeObserver().addOnScrollChangedListener(() -> {
-                int y = scroll.getScrollY();
-                currentPage = pages.pageAtY(y);
-                updateLabel();
-            });
-        } catch(Exception e) {
-            Toast.makeText(this,"تعذر فتح ملف PDF",Toast.LENGTH_LONG).show();
+            pageView.setPageChangedListener(p -> { currentPage = p; updateLabel(); });
+            pageView.loadPage();
+        } catch (Exception e) {
+            Toast.makeText(this, "تعذر فتح ملف PDF", Toast.LENGTH_LONG).show();
             finish();
         }
     }
 
-    private void goToPage(int p, ScrollView s) {
-        p=Math.max(0,Math.min(pageCount-1,p));
-        currentPage=p;
-        s.smoothScrollTo(0,pages.pageTop(p));
-        updateLabel();
+    private void applySystemBars() {
+        getWindow().setStatusBarColor(Color.rgb(3,10,20));
+        getWindow().setNavigationBarColor(Color.rgb(255,248,252));
+        if (android.os.Build.VERSION.SDK_INT >= 26) {
+            getWindow().getDecorView().setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        }
+        if (android.os.Build.VERSION.SDK_INT >= 29) getWindow().setNavigationBarContrastEnforced(false);
     }
 
     private void updateLabel() {
-        if(pageLabel!=null) pageLabel.setText((currentPage+1)+" / "+pageCount+"   •   Pinch zoom");
+        if (pageLabel != null) pageLabel.setText((currentPage + 1) + " / " + pageCount + "   •   Pinch / Pan");
     }
 
-    private Button button(String text, boolean wide) {
-        Button b=new Button(this);
+    private Button button(String text, boolean wide, int color) {
+        Button b = new Button(this);
         b.setText(text);
         b.setTextColor(Color.WHITE);
-        b.setTextSize(wide ? 12 : 22);
+        b.setTextSize(wide ? 12 : 25);
         b.setAllCaps(false);
         b.setMinHeight(dp(46));
-        b.setMinWidth(dp(wide ? 120 : 46));
-        b.setPadding(dp(wide ? 10 : 4),0,dp(wide ? 10 : 4),0);
-        GradientDrawable bg=new GradientDrawable();
-        bg.setColor(wide ? Color.rgb(38,99,235) : Color.rgb(25,42,64));
+        b.setMinWidth(dp(wide ? 120 : 48));
+        b.setPadding(dp(wide ? 10 : 2), 0, dp(wide ? 10 : 2), 0);
+        GradientDrawable bg = new GradientDrawable();
+        bg.setColor(color);
         bg.setCornerRadius(dp(10));
         b.setBackground(bg);
         return b;
     }
 
-    private LinearLayout.LayoutParams weight(float w) {
-        return new LinearLayout.LayoutParams(0,-1,w);
-    }
-
-    private int dp(int v) {
-        return (int)(v*getResources().getDisplayMetrics().density+0.5f);
-    }
+    private LinearLayout.LayoutParams weight(float w) { return new LinearLayout.LayoutParams(0, -1, w); }
+    private int dp(int v) { return (int)(v * getResources().getDisplayMetrics().density + 0.5f); }
 
     @Override protected void onDestroy() {
-        super.onDestroy();
         try {
-            if(renderer!=null)renderer.close();
-            if(descriptor!=null)descriptor.close();
-        }catch(Exception ignored){}
+            if (pageView != null) pageView.releaseBitmap();
+            if (renderer != null) renderer.close();
+            renderer = null;
+            if (descriptor != null) descriptor.close();
+            descriptor = null;
+        } catch (Exception ignored) {}
+        super.onDestroy();
     }
 
-    private class PdfPagesView extends View {
-        Paint paint=new Paint(Paint.ANTI_ALIAS_FLAG|Paint.FILTER_BITMAP_FLAG);
-        ArrayList<Integer> baseHeights=new ArrayList<>();
-        ArrayList<Bitmap> bitmaps=new ArrayList<>();
-        float scale=1f;
-        float focusContentX=0f;
-        float focusContentY=0f;
-        float oldScaleAtGesture=1f;
-        ScaleGestureDetector detector;
-        ScrollView parentScroll;
+    private class PdfPageView extends View {
+        private final Paint paint = new Paint(Paint.ANTI_ALIAS_FLAG | Paint.FILTER_BITMAP_FLAG);
+        private final ScaleGestureDetector scaleDetector;
+        private final GestureDetector gestureDetector;
+        private Bitmap bitmap;
+        private float fitScale = 1f;
+        private float scale = 1f;
+        private float offsetX = 0f;
+        private float offsetY = 0f;
+        private float lastFocusX;
+        private float lastFocusY;
+        private final int touchSlop;
+        private int downPage = 0;
+        private OnPageChanged pageChanged;
 
-        PdfPagesView(ScrollView scroll) {
+        PdfPageView() {
             super(PdfViewerActivity.this);
-            parentScroll=scroll;
             setBackgroundColor(Color.rgb(25,32,42));
-            for(int i=0;i<pageCount;i++){ baseHeights.add(dp(500)); bitmaps.add(null); }
-
-            detector=new ScaleGestureDetector(PdfViewerActivity.this,
-                new ScaleGestureDetector.SimpleOnScaleGestureListener() {
-                    @Override public boolean onScaleBegin(ScaleGestureDetector d) {
-                        oldScaleAtGesture=scale;
-                        focusContentX=(d.getFocusX()-getWidth()/2f)/Math.max(0.01f,scale)+getWidth()/2f;
-                        focusContentY=(parentScroll.getScrollY()+d.getFocusY())/Math.max(0.01f,scale);
-                        parentScroll.requestDisallowInterceptTouchEvent(true);
+            touchSlop = ViewConfiguration.get(PdfViewerActivity.this).getScaledTouchSlop();
+            scaleDetector = new ScaleGestureDetector(PdfViewerActivity.this, new ScaleGestureDetector.SimpleOnScaleGestureListener() {
+                @Override public boolean onScaleBegin(ScaleGestureDetector d) {
+                    lastFocusX = d.getFocusX();
+                    lastFocusY = d.getFocusY();
+                    getParent().requestDisallowInterceptTouchEvent(true);
+                    return true;
+                }
+                @Override public boolean onScale(ScaleGestureDetector d) {
+                    if (bitmap == null) return true;
+                    float old = scale;
+                    float next = Math.max(fitScale, Math.min(5f, old * d.getScaleFactor()));
+                    if (Math.abs(next - old) < 0.0005f) return true;
+                    float contentX = (lastFocusX - pageLeft(old)) / old;
+                    float contentY = (lastFocusY - pageTop(old)) / old;
+                    scale = next;
+                    offsetX = lastFocusX - contentX * scale - centeredLeft(scale);
+                    offsetY = lastFocusY - contentY * scale - centeredTop(scale);
+                    clampOffsets();
+                    lastFocusX = d.getFocusX();
+                    lastFocusY = d.getFocusY();
+                    invalidate();
+                    return true;
+                }
+                @Override public void onScaleEnd(ScaleGestureDetector d) {
+                    getParent().requestDisallowInterceptTouchEvent(false);
+                }
+            });
+            gestureDetector = new GestureDetector(PdfViewerActivity.this, new GestureDetector.SimpleOnGestureListener() {
+                @Override public boolean onDown(MotionEvent e) { return true; }
+                @Override public boolean onDoubleTap(MotionEvent e) {
+                    float target = scale < fitScale * 1.5f ? Math.min(5f, fitScale * 2.2f) : fitScale;
+                    zoomTo(target, e.getX(), e.getY());
+                    return true;
+                }
+                @Override public boolean onScroll(MotionEvent e1, MotionEvent e2, float dx, float dy) {
+                    if (scale <= fitScale * 1.001f) return false;
+                    offsetX -= dx;
+                    offsetY -= dy;
+                    clampOffsets();
+                    invalidate();
+                    return true;
+                }
+                @Override public boolean onFling(MotionEvent e1, MotionEvent e2, float vx, float vy) {
+                    if (scale <= fitScale * 1.001f && Math.abs(vy) < Math.abs(vx) * 0.9f && Math.abs(vx) > 700) {
+                        if (vx < 0) goToPage(currentPage + 1);
+                        else goToPage(currentPage - 1);
                         return true;
                     }
-
-                    @Override public boolean onScale(ScaleGestureDetector d) {
-                        float next=Math.max(0.75f,Math.min(4f,scale*d.getScaleFactor()));
-                        if(Math.abs(next-scale)<0.001f) return true;
-                        scale=next;
-                        requestLayout();
-                        invalidate();
-
-                        final float targetY=focusContentY*scale-d.getFocusY();
-                        post(() -> {
-                            int max=Math.max(0,getHeight()-parentScroll.getHeight());
-                            parentScroll.scrollTo(parentScroll.getScrollX(),Math.max(0,Math.min(max,(int)targetY)));
-                        });
-                        return true;
-                    }
-
-                    @Override public void onScaleEnd(ScaleGestureDetector d) {
-                        parentScroll.requestDisallowInterceptTouchEvent(false);
-                    }
-                });
-        }
-
-        int pageTop(int p) {
-            int y=0;
-            for(int i=0;i<p;i++) y+=baseHeights.get(i)+dp(14);
-            return (int)(y*scale);
-        }
-
-        int pageAtY(int y) {
-            int unscaled=(int)(y/Math.max(0.01f,scale));
-            int acc=0;
-            for(int i=0;i<pageCount;i++){
-                int h=baseHeights.get(i)+dp(14);
-                if(unscaled<acc+h) return i;
-                acc+=h;
-            }
-            return Math.max(0,pageCount-1);
-        }
-
-        @Override protected void onMeasure(int ws,int hs) {
-            int width=MeasureSpec.getSize(ws);
-            int contentWidth=Math.max(dp(280),width-dp(24));
-            int total=0;
-            for(int i=0;i<pageCount;i++){
-                if(bitmaps.get(i)==null){
-                    try{
-                        PdfRenderer.Page page=renderer.openPage(i);
-                        float ratio=(float)page.getHeight()/Math.max(1,page.getWidth());
-                        int h=(int)(contentWidth*ratio);
-                        baseHeights.set(i,Math.max(dp(200),h));
-                        page.close();
-                    }catch(Exception ignored){}
-                } else {
-                    baseHeights.set(i,bitmaps.get(i).getHeight());
+                    return false;
                 }
-                total+=baseHeights.get(i)+dp(14);
-            }
-            setMeasuredDimension(width,Math.max(dp(100),(int)(total*scale)));
+            });
         }
 
-        @Override protected void onDraw(Canvas c) {
-            super.onDraw(c);
-            if(parentScroll==null || renderer==null) return;
+        interface OnPageChanged { void changed(int page); }
+        void setPageChangedListener(OnPageChanged l) { pageChanged = l; }
+        boolean isLoaded() { return bitmap != null; }
 
-            int viewportTop=parentScroll.getScrollY();
-            int viewportBottom=viewportTop+parentScroll.getHeight();
-            float topContent=viewportTop/Math.max(0.01f,scale)-dp(250);
-            float bottomContent=viewportBottom/Math.max(0.01f,scale)+dp(250);
-
-            c.save();
-            float pivotX=(focusContentX>0?focusContentX:getWidth()/2f);
-            float pivotY=(focusContentY>0?focusContentY:topContent);
-            c.scale(scale,scale,pivotX,pivotY);
-
-            int y=0;
-            int width=getWidth()-dp(24);
-            for(int i=0;i<pageCount;i++){
-                int h=baseHeights.get(i);
-                if(y+h>=topContent && y<=bottomContent){
-                    Bitmap bm=render(i,width,h);
-                    if(bm!=null){
-                        float left=(getWidth()-bm.getWidth())/2f;
-                        android.graphics.RectF dst=new android.graphics.RectF(left,y,left+bm.getWidth(),y+bm.getHeight());
-                        paint.setFilterBitmap(true);
-                        c.drawBitmap(bm,null,dst,paint);
-                    }
+        void loadPage() {
+            if (renderer == null) return;
+            post(() -> {
+                try {
+                    PdfRenderer.Page page = renderer.openPage(currentPage);
+                    int targetWidth = Math.max(dp(1000), getWidth() * 2);
+                    float ratio = page.getHeight() / (float)Math.max(1, page.getWidth());
+                    int targetHeight = Math.max(dp(1000), (int)(targetWidth * ratio));
+                    Bitmap b = Bitmap.createBitmap(targetWidth, targetHeight, Bitmap.Config.ARGB_8888);
+                    b.eraseColor(Color.WHITE);
+                    page.render(b, null, null, PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
+                    page.close();
+                    releaseBitmap();
+                    bitmap = b;
+                    fitScale = Math.min(getWidth() / (float)b.getWidth(), getHeight() / (float)b.getHeight());
+                    if (!Float.isFinite(fitScale) || fitScale <= 0) fitScale = 1f;
+                    scale = fitScale;
+                    offsetX = offsetY = 0f;
+                    invalidate();
+                } catch (Exception e) {
+                    bitmap = null;
+                    invalidate();
                 }
-                y+=h+dp(14);
+            });
+        }
+
+        private void goToPage(int p) {
+            int next = Math.max(0, Math.min(pageCount - 1, p));
+            if (next == currentPage) return;
+            currentPage = next;
+            if (pageChanged != null) pageChanged.changed(currentPage);
+            loadPage();
+        }
+
+        private void zoomTo(float target, float focusX, float focusY) {
+            if (bitmap == null) return;
+            float old = scale;
+            float next = Math.max(fitScale, Math.min(5f, target));
+            float contentX = (focusX - pageLeft(old)) / old;
+            float contentY = (focusY - pageTop(old)) / old;
+            scale = next;
+            offsetX = focusX - contentX * scale - centeredLeft(scale);
+            offsetY = focusY - contentY * scale - centeredTop(scale);
+            clampOffsets();
+            invalidate();
+        }
+
+        private float centeredLeft(float s) { return (getWidth() - bitmap.getWidth() * s) / 2f; }
+        private float centeredTop(float s) { return (getHeight() - bitmap.getHeight() * s) / 2f; }
+        private float pageLeft(float s) { return centeredLeft(s) + offsetX; }
+        private float pageTop(float s) { return centeredTop(s) + offsetY; }
+
+        private void clampOffsets() {
+            if (bitmap == null) return;
+            float maxX = Math.max(0, (bitmap.getWidth() * scale - getWidth()) / 2f);
+            float maxY = Math.max(0, (bitmap.getHeight() * scale - getHeight()) / 2f);
+            offsetX = Math.max(-maxX, Math.min(maxX, offsetX));
+            offsetY = Math.max(-maxY, Math.min(maxY, offsetY));
+        }
+
+        @Override protected void onSizeChanged(int w, int h, int oldw, int oldh) {
+            super.onSizeChanged(w, h, oldw, oldh);
+            if (bitmap != null) {
+                fitScale = Math.min(w / (float)bitmap.getWidth(), h / (float)bitmap.getHeight());
+                if (!Float.isFinite(fitScale) || fitScale <= 0) fitScale = 1f;
+                if (scale < fitScale) scale = fitScale;
+                clampOffsets();
             }
-            c.restore();
         }
 
-        Bitmap render(int i,int width,int targetH) {
-            Bitmap old=bitmaps.get(i);
-            if(old!=null) return old;
-            try{
-                PdfRenderer.Page page=renderer.openPage(i);
-                int w=Math.max(dp(280),width);
-                int h=Math.max(dp(280),(int)(w*((float)page.getHeight()/Math.max(1,page.getWidth()))));
-                Bitmap b=Bitmap.createBitmap(w,h,Bitmap.Config.ARGB_8888);
-                b.eraseColor(Color.WHITE);
-                page.render(b,null,null,PdfRenderer.Page.RENDER_MODE_FOR_DISPLAY);
-                page.close();
-                bitmaps.set(i,b);
-                baseHeights.set(i,h);
-                return b;
-            }catch(Exception e){ return null; }
+        @Override protected void onDraw(Canvas canvas) {
+            super.onDraw(canvas);
+            if (bitmap == null) return;
+            float left = pageLeft(scale);
+            float top = pageTop(scale);
+            RectF dst = new RectF(left, top, left + bitmap.getWidth() * scale, top + bitmap.getHeight() * scale);
+            paint.setFilterBitmap(true);
+            canvas.drawBitmap(bitmap, null, dst, paint);
         }
 
-        @Override public boolean onTouchEvent(MotionEvent e) {
-            if(e.getPointerCount()>1) parentScroll.requestDisallowInterceptTouchEvent(true);
-            boolean handled=detector.onTouchEvent(e);
-            if(e.getActionMasked()==MotionEvent.ACTION_UP || e.getActionMasked()==MotionEvent.ACTION_CANCEL)
-                parentScroll.requestDisallowInterceptTouchEvent(false);
-            return handled || e.getPointerCount()>1 || super.onTouchEvent(e);
+        @Override public boolean onTouchEvent(MotionEvent event) {
+            int action = event.getActionMasked();
+            if (action == MotionEvent.ACTION_DOWN) {
+                downPage = currentPage;
+                getParent().requestDisallowInterceptTouchEvent(true);
+            }
+            boolean scaled = scaleDetector.onTouchEvent(event);
+            boolean gestured = gestureDetector.onTouchEvent(event);
+            if (action == MotionEvent.ACTION_UP || action == MotionEvent.ACTION_CANCEL) {
+                getParent().requestDisallowInterceptTouchEvent(false);
+            }
+            return scaled || gestured || true;
+        }
+
+        void releaseBitmap() {
+            if (bitmap != null && !bitmap.isRecycled()) bitmap.recycle();
+            bitmap = null;
         }
     }
 }
 `);
-const providerDir = join(res, 'xml'); mkdirSync(providerDir, {recursive:true});
-writeFileSync(join(providerDir,'file_paths.xml'), `<?xml version="1.0" encoding="utf-8"?><paths xmlns:android="http://schemas.android.com/apk/res/android"><cache-path name="pdf_cache" path="pdf/" /></paths>`);
+
+const providerDir = join(res, 'xml');
+mkdirSync(providerDir, { recursive: true });
+writeFileSync(join(providerDir, 'file_paths.xml'), `<?xml version="1.0" encoding="utf-8"?><paths xmlns:android="http://schemas.android.com/apk/res/android"><cache-path name="pdf_cache" path="pdf/" /></paths>`);
+
 const mainJavaRoot = join(app, 'src', 'main', 'java');
 function findMainActivity(dir){
   if(!existsSync(dir)) return null;
   for(const n of readdirSync(dir,{withFileTypes:true})){
-    const p=join(dir,n.name); if(n.isDirectory()){const f=findMainActivity(p); if(f)return f;} else if(n.name==='MainActivity.java') return p;
-  } return null;
+    const p=join(dir,n.name);
+    if(n.isDirectory()){const f=findMainActivity(p); if(f)return f;}
+    else if(n.name==='MainActivity.java') return p;
+  }
+  return null;
 }
 const mainActivity=findMainActivity(mainJavaRoot);
 if(mainActivity){
   let t=readFileSync(mainActivity,'utf8');
+  const packageLine=(t.match(/^package\s+[^;]+;/m)||[])[0]||'';
+  const originalClass='public class MainActivity extends BridgeActivity {';
   if(!t.includes('ivSystemBars')){
     if(!t.includes('import com.inthevoid.platform.PdfViewerPlugin;')){
       t=t.replace(/(package [^;]+;)/, '$1\n\nimport com.inthevoid.platform.PdfViewerPlugin;');
     }
-    t=t.replace(/public class MainActivity extends BridgeActivity \{/,
+    t=t.replace(originalClass,
 `public class MainActivity extends BridgeActivity {
     private void ivSystemBars() {
         android.view.Window w = getWindow();
@@ -461,12 +481,13 @@ if(mainActivity){
         ivSystemBars();
     }`);
     writeFileSync(mainActivity,t);
+  } else {
+    // Repair any older generated version that used protected onResume().
+    let repaired=t.replace(/@Override\s+protected\s+void\s+onResume\s*\(/g,'@Override public void onResume(');
+    if(repaired!==t) writeFileSync(mainActivity,repaired);
   }
 }
 
-// Standalone internal admin/scanner pages need the same native Back behavior as the SPA.
-// This is intentionally a tiny bridge: it only runs inside the Capacitor Android app and
-// leaves normal web-browser navigation untouched.
 const standalonePages = ['admin-manager.html','admin-videos.html','pdf-forensic-scanner.html'];
 const standaloneBackScript = `<script>
 (function ivStandaloneBack(){
@@ -517,9 +538,9 @@ for (const page of standalonePages) {
     }
   }
 }
-// Keep the Android launch window neutral and remove any old custom image splash.
-// Android 12+ may still show the platform-mandated system splash, but this project
-// no longer requests the Capacitor SplashScreen plugin/resource.
+
+// Keep the Android launch window neutral. Android 12+ may still show the platform-mandated
+// system splash; this project does not request the Capacitor SplashScreen plugin.
 const ivNavigationColor = '@color/iv_navigation_bar';
 const ivColorsPath = join(res, 'values', 'colors.xml');
 mkdirSync(join(res, 'values'), { recursive: true });
@@ -540,12 +561,8 @@ function patchStyleFiles(dir) {
     styles = styles.replace(/<item name="android:navigationBarColor">[^<]*<\/item>\s*/g, '');
     styles = styles.replace(/<item name="android:windowLightNavigationBar">[^<]*<\/item>\s*/g, '');
     styles = styles.replace(/(<style\b[^>]*>)([\s\S]*?)(<\/style>)/g, (full, open, body, close) => {
-      if (!body.includes('android:navigationBarColor')) {
-        body = '\n        <item name="android:navigationBarColor">' + ivNavigationColor + '</item>' + body;
-      }
-      if (!body.includes('android:windowLightNavigationBar')) {
-        body = '\n        <item name="android:windowLightNavigationBar">true</item>' + body;
-      }
+      if (!body.includes('android:navigationBarColor')) body = '\n        <item name="android:navigationBarColor">' + ivNavigationColor + '</item>' + body;
+      if (!body.includes('android:windowLightNavigationBar')) body = '\n        <item name="android:windowLightNavigationBar">true</item>' + body;
       return open + body + close;
     });
     writeFileSync(path,styles);
@@ -553,13 +570,13 @@ function patchStyleFiles(dir) {
 }
 patchStyleFiles(res);
 
-const providerManifest = `\n        <provider android:name="androidx.core.content.FileProvider" android:authorities="${'${applicationId}'}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>`;
 const manifestPath=join(app,'src','main','AndroidManifest.xml');
 if(existsSync(manifestPath)){
- let t=readFileSync(manifestPath,'utf8');
- if(!t.includes('androidx.core.content.FileProvider')) t=t.replace('</application>', providerManifest+'\n    </application>');
- if(!t.includes('PdfViewerActivity')) t=t.replace('</application>', '        <activity android:name=".PdfViewerActivity" android:exported="false" android:screenOrientation="portrait" />\n    </application>');
- writeFileSync(manifestPath,t);
+  let t=readFileSync(manifestPath,'utf8');
+  const providerManifest = `\n        <provider android:name="androidx.core.content.FileProvider" android:authorities="${'${applicationId}'}.fileprovider" android:exported="false" android:grantUriPermissions="true"><meta-data android:name="android.support.FILE_PROVIDER_PATHS" android:resource="@xml/file_paths" /></provider>`;
+  if(!t.includes('androidx.core.content.FileProvider')) t=t.replace('</application>', providerManifest+'\n    </application>');
+  if(!t.includes('PdfViewerActivity')) t=t.replace('</application>', '        <activity android:name=".PdfViewerActivity" android:exported="false" android:screenOrientation="portrait" />\n    </application>');
+  writeFileSync(manifestPath,t);
 }
 
 console.log(`Prepared Android: com.inthevoid.platform versionCode=${versionCode} versionName=${versionName}`);
