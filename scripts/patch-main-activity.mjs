@@ -31,7 +31,6 @@ if (file.endsWith('.kt')) {
     }
 `;
   if (!text.includes('private fun ivSystemBars()')) text = text.replace(/\n}\s*$/, '\n' + bars + '}\n');
-
   if (/class\s+MainActivity\s*:\s*BridgeActivity\(\)\s*\{?\s*\}?\s*$/.test(text)) {
     text = text.replace(/class\s+MainActivity\s*:\s*BridgeActivity\(\)\s*\{?\s*\}?\s*$/, `class MainActivity : BridgeActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -69,7 +68,24 @@ ${pluginLine}
     }
   }
 } else {
-  if (!text.includes('registerPlugin(PdfViewerPlugin.class)')) {
+  if (!text.includes('import android.os.Bundle;')) {
+    const pkg = text.match(/^package\s+[^;]+;\n/);
+    if (pkg) text = text.replace(pkg[0], pkg[0] + '\nimport android.os.Bundle;\n');
+  }
+  if (!text.includes('public class MainActivity extends BridgeActivity')) throw new Error('Unexpected Java MainActivity declaration.');
+  if (!text.includes('private void ivSystemBars()')) {
+    const bars = `\n    private void ivSystemBars() {
+        android.view.Window w = getWindow();
+        w.setStatusBarColor(android.graphics.Color.rgb(3,10,20));
+        w.setNavigationBarColor(android.graphics.Color.rgb(255,248,252));
+        if (android.os.Build.VERSION.SDK_INT >= 26) w.getDecorView().setSystemUiVisibility(android.view.View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR);
+        if (android.os.Build.VERSION.SDK_INT >= 29) w.setNavigationBarContrastEnforced(false);
+    }\n`;
+    text = text.replace(/(public class MainActivity extends BridgeActivity\s*\{)/, `$1${bars}`);
+  }
+  if (!text.includes('public void onCreate(')) {
+    text = text.replace(/(public class MainActivity extends BridgeActivity\s*\{)/, `$1\n    @Override public void onCreate(Bundle savedInstanceState) {\n        super.onCreate(savedInstanceState);\n        registerPlugin(PdfViewerPlugin.class);\n        ivSystemBars();\n    }\n`);
+  } else if (!text.includes('registerPlugin(PdfViewerPlugin.class)')) {
     text = text.replace(/(super\.onCreate\(savedInstanceState\);)/, `$1\n        registerPlugin(PdfViewerPlugin.class);\n        ivSystemBars();`);
   }
   if (text.includes('protected void onResume()')) text = text.replace('protected void onResume()', 'public void onResume()');
