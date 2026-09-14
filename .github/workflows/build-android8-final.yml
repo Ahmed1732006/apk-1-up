@@ -121,15 +121,7 @@ jobs:
             sleep 5
             adb shell dumpsys activity activities | grep -F 'com.inthevoid.platform/.PdfViewerActivity'
             adb exec-out screencap -p > /tmp/pdf-viewer.png
-            python3 - <<'PY'
-            from PIL import Image
-            im=Image.open('/tmp/pdf-viewer.png').convert('L')
-            crop=im.crop((0, 80, im.width, im.height-80))
-            vals=list(crop.getdata())
-            assert min(vals) < 40, 'PDF viewer screenshot is blank/white'
-            assert sum(v < 80 for v in vals) > 500, 'PDF page did not render visible dark content'
-            print('Android 8 PDF viewer rendered visible content.')
-            PY
+            python3 -c "from PIL import Image; im=Image.open('/tmp/pdf-viewer.png').convert('L'); crop=im.crop((0,80,im.width,im.height-80)); vals=list(crop.getdata()); assert min(vals)<40, 'PDF viewer screenshot is blank/white'; assert sum(v<80 for v in vals)>500, 'PDF page did not render visible dark content'; print('Android 8 PDF viewer rendered visible content.')"
       - uses: actions/upload-artifact@v4
         with:
           name: IN_THE_VOID-APK-Android8-Final
