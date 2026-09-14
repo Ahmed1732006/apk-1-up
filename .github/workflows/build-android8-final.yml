@@ -1,0 +1,95 @@
+name: Build IN THE VOID Android 8 Final
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with: {node-version: '20'}
+      - run: npm install --no-audit --no-fund
+      - run: test -s google-services.json
+      - run: npm run build:web
+      - run: npx cap add android
+      - run: npx capacitor-assets generate --android
+      - name: Version
+        run: |
+          echo "ANDROID_VERSION_CODE=$((GITHUB_RUN_NUMBER + 60))" >> "$GITHUB_ENV"
+          echo "ANDROID_VERSION_NAME=1.4.1" >> "$GITHUB_ENV"
+      - run: node scripts/prepare-android.mjs
+      - run: node scripts/patch-pdf-canonical.mjs
+      - run: node scripts/fix-pdf-java-escapes.mjs
+      - run: node scripts/patch-main-activity.mjs
+      - run: npx cap sync android
+      - run: |
+          node scripts/prepare-android.mjs
+          node scripts/patch-pdf-canonical.mjs
+          node scripts/fix-pdf-java-escapes.mjs
+          node scripts/patch-main-activity.mjs
+          node scripts/patch-pdf-android8.mjs
+      - name: Preflight
+        run: |
+          set -euo pipefail
+          grep -Fq 'minSdkVersion 26' android/app/build.gradle
+          ! grep -Fq 'androidx.pdf:pdf-viewer-fragment' android/app/build.gradle
+          grep -Fq 'android.graphics.pdf.PdfRenderer' android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity.java
+          grep -Fq 'ScaleGestureDetector' android/app/src/main/java/com/inthevoid/platform/PdfViewerActivity.java
+          grep -Fq 'PdfViewer.openUrl' www/app/index.html
+          grep -Fq 'downloadAndValidatePdf' android/app/src/main/java/com/inthevoid/platform/PdfViewerPlugin.java
+          grep -Fq 'PdfViewerActivity' android/app/src/main/AndroidManifest.xml
+      - uses: actions/setup-java@v4
+        with: {distribution: temurin, java-version: '21', cache: gradle}
+      - uses: android-actions/setup-android@v3
+        with:
+          packages: tools platform-tools platforms;android-36
+      - name: Signing secrets
+        env:
+          KS: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+          KP: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          KA: ${{ secrets.ANDROID_KEY_ALIAS }}
+          KAP: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          test -n "$KS"; test -n "$KP"; test -n "$KA"; test -n "$KAP"
+          printf '%s' "$KS" | base64 --decode > android/in_the_void_release.jks
+          chmod 600 android/in_the_void_release.jks
+      - name: Build
+        working-directory: android
+        env:
+          ANDROID_KEYSTORE_PATH: ${{ github.workspace }}/android/in_the_void_release.jks
+          ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+          ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+          ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          ./gradlew assembleRelease --no-daemon
+          D=app/build/outputs/apk/release
+          U=$(find "$D" -maxdepth 1 -type f -name '*unsigned*.apk' | head -1 || true)
+          if [ -z "$U" ]; then U="$D/app-release.apk"; fi
+          BT=$(find "$ANDROID_HOME/build-tools" -mindepth 1 -maxdepth 1 -type d | sort -V | tail -1)
+          "$BT/zipalign" -f 4 "$U" "$D/aligned.apk"
+          "$BT/apksigner" sign --ks "$ANDROID_KEYSTORE_PATH" --ks-key-alias "$ANDROID_KEY_ALIAS" --ks-pass "env:ANDROID_KEYSTORE_PASSWORD" --key-pass "env:ANDROID_KEY_PASSWORD" --out "$D/app-release.apk" "$D/aligned.apk"
+          rm -f "$D/aligned.apk"; [ "$U" = "$D/app-release.apk" ] || rm -f "$U"
+      - name: Verify and inspect APK
+        run: |
+          set -euo pipefail
+          APK=android/app/build/outputs/apk/release/app-release.apk
+          AAPT=$(find "$ANDROID_HOME/build-tools" -type f -name aapt | sort -V | tail -1)
+          APKS=$(find "$ANDROID_HOME/build-tools" -type f -name apksigner | sort -V | tail -1)
+          B=$("$AAPT" dump badging "$APK")
+          printf '%s\n' "$B" | grep -F "name='com.inthevoid.platform'"
+          printf '%s\n' "$B" | grep -F "versionName='1.4.1'"
+          "$APKS" verify --verbose --print-certs "$APK"
+          mkdir -p /tmp/apkcheck
+          unzip -q -o "$APK" 'classes*.dex' 'assets/public/app/index.html' -d /tmp/apkcheck
+          strings /tmp/apkcheck/classes.dex | grep -F 'PdfViewerActivity'
+          strings /tmp/apkcheck/classes.dex | grep -F 'PdfRenderer'
+          grep -Fq 'PdfViewer.openUrl' /tmp/apkcheck/assets/public/app/index.html
+          ! grep -Fq 'iv-native-pdf-runtime' /tmp/apkcheck/assets/public/app/index.html
+      - uses: actions/upload-artifact@v4
+        with:
+          name: IN_THE_VOID-APK-Android8-Final
+          path: android/app/build/outputs/apk/release/app-release.apk
+      - if: always()
+        run: rm -f android/in_the_void_release.jks
